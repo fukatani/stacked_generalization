@@ -98,10 +98,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         """Predict class for X.
 
-        The predicted class of an input sample is a vote by the trees in
-        the forest, weighted by their probability estimates. That is,
-        the predicted class is the one with highest mean probability
-        estimate across the trees.
+        The predicted class of an input sample is a vote by the StackedClassifier.
 
         Parameters
         ----------
