@@ -1,4 +1,4 @@
-
+from sklearn.cross_validation import StratifiedKFold
 from sklearn import preprocessing
 from sklearn.linear_model import LogisticRegression, RidgeClassifier, Ridge
 from sklearn.preprocessing import OneHotEncoder, LabelBinarizer
@@ -124,9 +124,10 @@ class TestDataReader(DataReader):
 
 
 if __name__ == '__main__':
-    train = True
+    train = False
     half_cv = False
     two_stage_cv = False
+    full_cv = True
 
     train_dr = DataReader('train.csv')
     bclf = LogisticRegression(random_state=1)
@@ -140,7 +141,7 @@ if __name__ == '__main__':
             #KNeighborsClassifier(n_neighbors=4)
             #LogisticRegression(random_state=1)
             ]
-    sl = StackedClassifier(bclf, clfs, verbose=2)
+    sl = StackedClassifier(bclf, clfs, n_folds=3, verbose=2)
     #fsl = FWSLClassifier(bclf, clfs, feature=xs_train[:, 0])
     if train:
         xs_train, xs_test, y_train, y_test = train_dr.get_sample()
@@ -157,6 +158,14 @@ if __name__ == '__main__':
         xs_train, y_train = train_dr.get_sample(-1)
         score = sl.two_stage_cv(xs_train, y_train)
         print('twostage-cv score: {0}'.format(score))
+    elif full_cv:
+        sl = StackedClassifier(bclf, clfs, oob_score_flag=False,verbose=2)
+        xs_train, y_train = train_dr.get_sample(-1)
+        score = []
+        for train_index, test_index in StratifiedKFold(y_train, 3):
+            sl.fit(xs_train[train_index], y_train[train_index])
+            score.append(sl.score(xs_train[test_index], y_train[test_index]))
+        print('full-cv score: {0}'.format(score))
     else: #to pb leader board
         xs_train, y_train = train_dr.get_sample(-1)
         sl.fit(xs_train, y_train)

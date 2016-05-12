@@ -34,7 +34,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         blend_test = np.zeros((xs_train.shape[0], len(self.clfs)))
         for j, clf in enumerate(self.clfs):
             self._out_to_console('Training classifier [{0}]'.format(j), 0)
-            self.all_learner[str(type(clf))] = []
+            all_learner_key = str(type(clf)) + str(j)
+            self.all_learner[all_learner_key] = []
             for i, (train_index, cv_index, test_index) in self._iter_for_kfold(skf):
                 now_learner = clone(clf)
                 self._out_to_console('Fold [{0}]'.format(i), 0)
@@ -45,7 +46,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 y_cv = y_train[cv_index]
 
                 now_learner.fit(xs_now_train, y_now_train)
-                self.all_learner[str(type(clf))].append(now_learner)
+                self.all_learner[all_learner_key].append(now_learner)
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
                 if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
@@ -96,7 +97,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         return self.bclf.predict_proba(blend_test)
 
     def _make_blendX(self, xs_test):
-        blend_test = np.zeros((xs_test.shape[0], len(self.clfs)))
+        blend_test = np.zeros((xs_test.shape[0], len(self.all_learner)))
         for j, clfs in enumerate(self.all_learner.values()):
             blend_test_j = np.zeros((xs_test.shape[0], self.n_folds))
             for i, clf in enumerate(clfs):
@@ -145,7 +146,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         return temp_score / self.n_folds
 
     def calc_oob_score(self, brend_train, y_train, skf):
-        #abolished in future
         scores = []
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
