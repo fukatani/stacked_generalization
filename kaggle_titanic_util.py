@@ -124,9 +124,9 @@ class TestDataReader(DataReader):
 
 
 if __name__ == '__main__':
-    train = False
-    half_cv = True
-    two_stage_cv = True
+    train = True
+    half_cv = False
+    two_stage_cv = False
 
     train_dr = DataReader('train.csv')
     bclf = LogisticRegression(random_state=1)

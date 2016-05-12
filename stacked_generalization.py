@@ -4,24 +4,27 @@ from sklearn import metrics
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from util import TwoStageKFold
 
+
 class StackedClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self,
                  bclf,
                  clfs,
                  n_folds=3,
                  stack_by_proba=True,
+                 oob_score_flag=False,
                  verbose=0):
         self.n_folds = n_folds
         self.clfs = clfs
         self.bclf = bclf
         self.stack_by_proba = stack_by_proba
         self.all_learner = {}
+        self.oob_score_flag = oob_score_flag
         self.verbose = verbose
 
     def _iter_for_kfold(self, skf):
         if isinstance(skf, StratifiedKFold):
             for i, (train_index, cv_index) in enumerate(skf):
-                yield i, (train_index, cv_index, 0)
+                yield i, (train_index, cv_index, None)
         elif isinstance(skf, TwoStageKFold):
             for i, (train_index, blend_index, test_index) in enumerate(skf):
                 yield i, (train_index, blend_index, test_index)
@@ -31,11 +34,10 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         blend_test = np.zeros((xs_train.shape[0], len(self.clfs)))
         for j, clf in enumerate(self.clfs):
             self._out_to_console('Training classifier [{0}]'.format(j), 0)
-            now_learner = clone(clf)
             self.all_learner[str(type(clf))] = []
             for i, (train_index, cv_index, test_index) in self._iter_for_kfold(skf):
+                now_learner = clone(clf)
                 self._out_to_console('Fold [{0}]'.format(i), 0)
-                self.all_learner[str(type(clf))].append(now_learner)
                 # This is the training and validation set
                 xs_now_train = xs_train[train_index]
                 y_now_train = y_train[train_index]
@@ -43,14 +45,19 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 y_cv = y_train[cv_index]
 
                 now_learner.fit(xs_now_train, y_now_train)
+                self.all_learner[str(type(clf))].append(now_learner)
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
                 if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
                     blend_train[cv_index, j] = now_learner.predict_proba(xs_cv)[:, 1]
                 else:
                     blend_train[cv_index, j] = now_learner.predict(xs_cv)
-                if test_index:
-                    blend_test[test_index, j] = now_learner.predict_proba(test_index)[:, 1]
+                if test_index is not None:
+                    xs_test = xs_train[test_index]
+                    if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
+                        blend_test[test_index, j] = now_learner.predict_proba(xs_test)[:, 1]
+                    else:
+                        blend_test[test_index, j] = now_learner.predict(xs_test)
         return blend_train, blend_test
 
     def fit(self, xs_train, y_train, xs_blend=None, y_blend=None):
@@ -65,12 +72,18 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         if not self.all_learner or not half_cv_flag:
             blend_train, _ = self._fit_child(skf, xs_train, y_train)
 
+            #calc out of bugs score
+            if self.oob_score_flag:
+                self.calc_oob_score(blend_train, y_train, skf)
+
         # Start blending!
         if half_cv_flag:
             blend_train = self._make_blendX(xs_blend)
             blend_train = self._pre_propcess(blend_train)
             self.bclf.fit(blend_train, y_blend)
         else:
+            self._out_to_csv('blend_train', blend_train, 2)
+            self._out_to_csv('y_train', y_train, 2)
             blend_train = self._pre_propcess(blend_train)
             self.bclf.fit(blend_train, y_train)
 
@@ -117,6 +130,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
     def score(self, xs_test, y_test):
         y_test_predict = self.predict(xs_test)
+        self._out_to_csv('xs_test', xs_test, 2)
+        self._out_to_csv('y_test', y_test, 2)
+        self._out_to_csv('y_test_predict', y_test_predict, 2)
         return metrics.accuracy_score(y_test, y_test_predict)
 
     def half_cv(self, X, Y):
@@ -135,23 +151,36 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             self.bclf.fit(blend_train[train_index], y_train[train_index])
             scores.append(self.bclf.score(blend_train[cv_index], y_train[cv_index]))
         self.oob_score = sum(scores) / len(scores)
+        self._out_to_console('oob_score: {0}'.format(self.oob_score), 0)
 
     def two_stage_cv(self, xs_train, y_train):
-        #TODO
         from util import TwoStageKFold
         tkf = TwoStageKFold(y_train.size, self.n_folds)
         blend_train, blend_test = self._fit_child(tkf, xs_train, y_train)
+        self._out_to_console('blend_train.shape = {0}'.format(blend_train.shape), 1)
+        self._out_to_console('blend_test.shape = {0}'.format(blend_test.shape), 1)
+
         score = 0
-        for j, clfs in enumerate(self.all_learner.values()):
-            for i, (_, blend_index, test_index) in self._iter_for_kfold(tkf):
-                self.bclf.fit(blend_train[blend_index], y_train[blend_index])
-                score += self.score(blend_test[test_index], y_train[test_index])
-        #score /= len(self._iter_for_kfold(tkf))
+        for i, (_, blend_index, test_index) in self._iter_for_kfold(tkf):
+            self.bclf.fit(blend_train[blend_index], y_train[blend_index])
+            score += self.score(xs_train[test_index], y_train[test_index])
+        score /= len(tkf)
         return score
 
     def _out_to_console(self, message, limit_verbose):
         if self.verbose > limit_verbose:
             print(message)
+
+    def _out_to_csv(self, file_name, data, limit_verbose):
+        import os
+        file_name = 'data/{0}.csv'.format(file_name)
+        if self.verbose > limit_verbose:
+            while True:
+                if os.path.isfile(file_name):
+                    file_name.replace('.csv', '_.csv')
+                else:
+                    break
+            np.savetxt(file_name, data, delimiter=",")
 
     def _pre_propcess(self, X):
         return X
