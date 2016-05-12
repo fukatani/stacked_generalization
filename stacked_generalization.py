@@ -46,11 +46,11 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
                 if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
-                    blend_train[cv_index, j] = now_learner.predict_proba(xs_cv)[:, 0]
+                    blend_train[cv_index, j] = now_learner.predict_proba(xs_cv)[:, 1]
                 else:
                     blend_train[cv_index, j] = now_learner.predict(xs_cv)
                 if test_index:
-                    blend_test[test_index, j] = now_learner.predict_proba(test_index)[:, 0]
+                    blend_test[test_index, j] = now_learner.predict_proba(test_index)[:, 1]
         return blend_train, blend_test
 
     def fit(self, xs_train, y_train, xs_blend=None, y_blend=None):
@@ -88,7 +88,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             blend_test_j = np.zeros((xs_test.shape[0], self.n_folds))
             for i, clf in enumerate(clfs):
                 if self.stack_by_proba and hasattr(clf, 'predict_proba'):
-                    blend_test_j[:, i] = clf.predict_proba(xs_test)[:, 0]
+                    blend_test_j[:, i] = clf.predict_proba(xs_test)[:, 1]
                 else:
                     blend_test_j[:, i] = clf.predict(xs_test)
             # Take the mean of the predictions of the cross validation set
