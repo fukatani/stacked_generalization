@@ -124,8 +124,7 @@ class TestDataReader(DataReader):
 
 
 if __name__ == '__main__':
-    train = False
-    half_cv = False
+    train = True
     two_stage_cv = False
     full_cv = True
 
@@ -144,16 +143,12 @@ if __name__ == '__main__':
     sl = StackedClassifier(bclf, clfs, n_folds=3, verbose=2)
     #fsl = FWSLClassifier(bclf, clfs, feature=xs_train[:, 0])
     if train:
+        sl = StackedClassifier(bclf, clfs, n_folds=3, verbose=2, oob_score_flag=True)
         xs_train, xs_test, y_train, y_test = train_dr.get_sample()
         sl.fit(xs_train, y_train)
         score = sl.score(xs_test, y_test)
         print('score: {0}'.format(score))
-##        sl.calc_oob_score()
-##        print('oob_score: {0]}'.format(sl.oob_score))
-    elif half_cv:
-        xs_train, y_train = train_dr.get_sample(-1)
-        score = sl.half_cv(xs_train, y_train)
-        print('half-cv score: {0}'.format(score))
+        print('oob_score: {0}'.format(sl.oob_score))
     elif two_stage_cv:
         xs_train, y_train = train_dr.get_sample(-1)
         score = sl.two_stage_cv(xs_train, y_train)

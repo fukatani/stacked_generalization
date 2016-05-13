@@ -39,7 +39,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             for i, (train_index, cv_index, test_index) in self._iter_for_kfold(skf):
                 now_learner = clone(clf)
                 self._out_to_console('Fold [{0}]'.format(i), 0)
-                # This is the training and validation set
+
                 xs_now_train = xs_train[train_index]
                 y_now_train = y_train[train_index]
                 xs_cv = xs_train[cv_index]
@@ -61,32 +61,22 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                         blend_test[test_index, j] = now_learner.predict(xs_test)
         return blend_train, blend_test
 
-    def fit(self, xs_train, y_train, xs_blend=None, y_blend=None):
+    def fit(self, xs_train, y_train):
         # Ready for cross validation
         skf = StratifiedKFold(y_train, self.n_folds)
-        half_cv_flag = xs_blend is not None and y_blend is not None
-
-        # Pre-allocate the data
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
 
-        # For each classifier, we train the number of fold times (=len(skf))
-        if not self.all_learner or not half_cv_flag:
-            blend_train, _ = self._fit_child(skf, xs_train, y_train)
+        blend_train, _ = self._fit_child(skf, xs_train, y_train)
 
-            #calc out of bugs score
-            if self.oob_score_flag:
-                self.calc_oob_score(blend_train, y_train, skf)
+        #calc out of bugs score
+        if self.oob_score_flag:
+            self.calc_oob_score(blend_train, y_train, skf)
 
-        # Start blending!
-        if half_cv_flag:
-            blend_train = self._make_blendX(xs_blend)
-            blend_train = self._pre_propcess(blend_train)
-            self.bclf.fit(blend_train, y_blend)
-        else:
-            self._out_to_csv('blend_train', blend_train, 2)
-            self._out_to_csv('y_train', y_train, 2)
-            blend_train = self._pre_propcess(blend_train)
-            self.bclf.fit(blend_train, y_train)
+        # blending
+        self._out_to_csv('blend_train', blend_train, 2)
+        self._out_to_csv('y_train', y_train, 2)
+        blend_train = self._pre_propcess(blend_train)
+        self.bclf.fit(blend_train, y_train)
 
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
         self._out_to_console('blend_train.shape = {0}'.format(blend_train.shape), 1)
@@ -136,16 +126,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self._out_to_csv('y_test_predict', y_test_predict, 2)
         return metrics.accuracy_score(y_test, y_test_predict)
 
-    def half_cv(self, X, Y):
-        train_idx, other_idx = list(StratifiedKFold(Y, 2))[0]
-        KF2 = StratifiedKFold(Y[other_idx], self.n_folds)
-        temp_score = 0
-        for i, (blend_idx, test_idx) in enumerate(KF2):
-            self.fit(X[train_idx], Y[train_idx], X[blend_idx], Y[blend_idx])
-            temp_score += self.score(X[test_idx], Y[test_idx])
-        return temp_score / self.n_folds
-
-    def calc_oob_score(self, brend_train, y_train, skf):
+    def calc_oob_score(self, blend_train, y_train, skf):
         scores = []
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
