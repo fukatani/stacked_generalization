@@ -125,8 +125,9 @@ class TestDataReader(DataReader):
 
 if __name__ == '__main__':
     train = True
-    two_stage_cv = False
+    two_stage_cv = True
     full_cv = True
+    test = False
 
     train_dr = DataReader('train.csv')
     bclf = LogisticRegression(random_state=1)
@@ -149,11 +150,11 @@ if __name__ == '__main__':
         score = sl.score(xs_test, y_test)
         print('score: {0}'.format(score))
         print('oob_score: {0}'.format(sl.oob_score))
-    elif two_stage_cv:
+    if two_stage_cv:
         xs_train, y_train = train_dr.get_sample(-1)
         score = sl.two_stage_cv(xs_train, y_train)
         print('twostage-cv score: {0}'.format(score))
-    elif full_cv:
+    if full_cv:
         sl = StackedClassifier(bclf, clfs, oob_score_flag=False,verbose=2)
         xs_train, y_train = train_dr.get_sample(-1)
         score = []
@@ -161,7 +162,7 @@ if __name__ == '__main__':
             sl.fit(xs_train[train_index], y_train[train_index])
             score.append(sl.score(xs_train[test_index], y_train[test_index]))
         print('full-cv score: {0}'.format(score))
-    else: #to pb leader board
+    if test: #to pb leader board
         xs_train, y_train = train_dr.get_sample(-1)
         sl.fit(xs_train, y_train)
         test_dr = TestDataReader('test.csv')

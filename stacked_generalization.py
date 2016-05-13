@@ -6,6 +6,31 @@ from util import TwoStageKFold
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
+    """A stacking classifier.
+
+    Parameters
+    ----------
+    bclf : stage1 model for stacking.
+
+    clfs : list of stage0 machine learning models.
+
+    n_folds : integer
+     Number of folds at stage0 blending.
+
+    stack_by_proba : boolean
+        If True and stage0 machine learning model has 'predict_proba',
+        result of it is used in blending.
+        If not, result of 'predict' is used in blending.
+
+    oob_score_flag : boolean
+        If True, stacked clssfier calc out-of-bugs score after fitting.
+        You can evaluate model by this score (with out CV).
+
+    verbose : int, optional (default=0)
+        Controls the verbosity of the tree building process.
+
+    .. [1] L. Breiman, "Stacked Regressions", Machine Learning, 24, 49-64 (1996).
+    """
     def __init__(self,
                  bclf,
                  clfs,
@@ -30,6 +55,26 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 yield i, (train_index, blend_index, test_index)
 
     def _fit_child(self, skf, xs_train, y_train):
+        """Build stage0 models from the training set (xs_train, y_train).
+
+        Parameters
+        ----------
+        skf: StratifiedKFold-like iterator
+            Use for cross validation blending.
+
+        xs_train : array-like or sparse matrix of shape = [n_samples, n_features]
+            The training input samples.
+
+        y_train : array-like, shape = [n_samples]
+            The target values (class labels in classification).
+
+        Returns
+        -------
+        blend_train : array-like, shape = [n_samples]
+            For stage1 model training.
+        blend_test : array-like, shape = [n_samples]
+            If you use TwoStageKFold, blended sample for test will be prepared.
+        """
         blend_train = np.zeros((xs_train.shape[0], len(self.clfs)))
         blend_test = np.zeros((xs_train.shape[0], len(self.clfs)))
         for j, clf in enumerate(self.clfs):
@@ -62,10 +107,26 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         return blend_train, blend_test
 
     def fit(self, xs_train, y_train):
+        """Build a stacked classfier from the training set (xs_train, y_train).
+
+        Parameters
+        ----------
+        xs_train : array-like or sparse matrix of shape = [n_samples, n_features]
+            The training input samples.
+
+        y_train : array-like, shape = [n_samples]
+            The target values (class labels in classification).
+
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
         # Ready for cross validation
         skf = StratifiedKFold(y_train, self.n_folds)
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
 
+        #fit stage0 models.
         blend_train, _ = self._fit_child(skf, xs_train, y_train)
 
         #calc out of bugs score
@@ -81,12 +142,40 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
         self._out_to_console('blend_train.shape = {0}'.format(blend_train.shape), 1)
 
+        return self
+
     def predict_proba(self, xs_test):
+        """Predict class probabilities for X.
+
+        The predicted class probabilities of an input sample is computed.
+
+        Parameters
+        ----------
+        X : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples.
+
+        Returns
+        -------
+        p : array of shape = [n_samples, n_classes].
+            The class probabilities of the input samples.
+        """
         blend_test = self._make_blendX(xs_test)
         blend_test = self._pre_propcess(blend_test)
         return self.bclf.predict_proba(blend_test)
 
     def _make_blendX(self, xs_test):
+        """Make blend sample for xs_test.
+
+        Parameters
+        ----------
+        xs_test : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples.
+
+        Returns
+        -------
+        blend_test : array of shape = [n_samples, n_stage0_models].
+            Calc as the mean of the predictions of the cross validation set.
+        """
         blend_test = np.zeros((xs_test.shape[0], len(self.all_learner)))
         for j, clfs in enumerate(self.all_learner.values()):
             blend_test_j = np.zeros((xs_test.shape[0], self.n_folds))
@@ -95,7 +184,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                     blend_test_j[:, i] = clf.predict_proba(xs_test)[:, 1]
                 else:
                     blend_test_j[:, i] = clf.predict(xs_test)
-            # Take the mean of the predictions of the cross validation set
             blend_test[:, j] = blend_test_j.mean(1)
         return blend_test
 
@@ -120,6 +208,23 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         return np.argmax(proba, axis=1)
 
     def score(self, xs_test, y_test):
+        """Prediction score for xs_test, y_test.
+
+        Parameters
+        ----------
+        xs_test : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, it will be converted to
+            ``dtype=np.float32`` and if a sparse matrix is provided
+            to a sparse ``csr_matrix``.
+
+        y_test : array of shape = [n_samples]
+            The predicted classes.
+
+        Returns
+        -------
+        y_test : array of shape = [n_samples]
+            The predicted classes.
+        """
         y_test_predict = self.predict(xs_test)
         self._out_to_csv('xs_test', xs_test, 2)
         self._out_to_csv('y_test', y_test, 2)
@@ -127,6 +232,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         return metrics.accuracy_score(y_test, y_test_predict)
 
     def calc_oob_score(self, blend_train, y_train, skf):
+        """Compute out-of-bag score"""
         scores = []
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
@@ -135,6 +241,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self._out_to_console('oob_score: {0}'.format(self.oob_score), 0)
 
     def two_stage_cv(self, xs_train, y_train):
+        """Compute two_stage_cv score"""
         from util import TwoStageKFold
         tkf = TwoStageKFold(y_train.size, self.n_folds)
         blend_train, blend_test = self._fit_child(tkf, xs_train, y_train)
@@ -153,12 +260,13 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             print(message)
 
     def _out_to_csv(self, file_name, data, limit_verbose):
+        """write_out numpy array to csv"""
         import os
         file_name = 'data/{0}.csv'.format(file_name)
         if self.verbose > limit_verbose:
             while True:
                 if os.path.isfile(file_name):
-                    file_name.replace('.csv', '_.csv')
+                    file_name = file_name.replace('.csv', '_.csv')
                 else:
                     break
             np.savetxt(file_name, data, delimiter=",")
@@ -167,6 +275,13 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         return X
 
 class FWLSClassifier(StackedClassifier):
+    """
+    Feature Weighted Linear Stacking Classfier.
+    References
+    ----------
+
+    .. [1] J. Sill1 et al, "Feature Weighted Linear Stacking", https://arxiv.org/abs/0911.0460, 2009.
+    """
     def __init__(self,
                  bclf,
                  clfs,
