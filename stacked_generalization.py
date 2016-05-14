@@ -37,6 +37,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                  n_folds=3,
                  stack_by_proba=True,
                  oob_score_flag=False,
+                 Kfold=StratifiedKFold,
                  verbose=0):
         self.n_folds = n_folds
         self.clfs = clfs
@@ -45,6 +46,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.all_learner = {}
         self.oob_score_flag = oob_score_flag
         self.verbose = verbose
+        self.MyKfold = Kfold
 
     def _iter_for_kfold(self, skf):
         if isinstance(skf, StratifiedKFold):
@@ -94,10 +96,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 self.all_learner[all_learner_key].append(now_learner)
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
-                if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
-                    blend_train[cv_index, j] = now_learner.predict_proba(xs_cv)[:, 1]
-                else:
-                    blend_train[cv_index, j] = now_learner.predict(xs_cv)
+                blend_train[cv_index, j] = self._get_child_predict(now_learner, xs_cv)
                 if test_index is not None:
                     xs_test = xs_train[test_index]
                     if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
@@ -123,7 +122,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             Returns self.
         """
         # Ready for cross validation
-        skf = StratifiedKFold(y_train, self.n_folds)
+        skf = self.MyKfold(y_train, self.n_folds)
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
 
         #fit stage0 models.
@@ -180,12 +179,15 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         for j, clfs in enumerate(self.all_learner.values()):
             blend_test_j = np.zeros((xs_test.shape[0], self.n_folds))
             for i, clf in enumerate(clfs):
-                if self.stack_by_proba and hasattr(clf, 'predict_proba'):
-                    blend_test_j[:, i] = clf.predict_proba(xs_test)[:, 1]
-                else:
-                    blend_test_j[:, i] = clf.predict(xs_test)
+                blend_test_j[:, i] = self._get_child_predict(clf, xs_test)
             blend_test[:, j] = blend_test_j.mean(1)
         return blend_test
+
+    def _get_child_predict(self, clf, X):
+        if self.stack_by_proba and hasattr(clf, 'predict_proba'):
+            return clf.predict_proba(X)[:, 1]
+        else:
+            return clf.predict(X)
 
     def predict(self, X):
         """Predict class for X.
@@ -234,11 +236,11 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def calc_oob_score(self, blend_train, y_train, skf):
         """Compute out-of-bag score"""
         scores = []
-        for train_index, cv_index in skf:
+        for _, (train_index, cv_index, _) in self._iter_for_kfold(skf):
             self.bclf.fit(blend_train[train_index], y_train[train_index])
             scores.append(self.bclf.score(blend_train[cv_index], y_train[cv_index]))
-        self.oob_score = sum(scores) / len(scores)
-        self._out_to_console('oob_score: {0}'.format(self.oob_score), 0)
+        self.oob_score_ = sum(scores) / len(scores)
+        self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
     def two_stage_cv(self, xs_train, y_train):
         """Compute two_stage_cv score"""
@@ -299,4 +301,3 @@ class FWLSClassifier(StackedClassifier):
     def _pre_propcess(self, X):
         X = util.multiple_feature_weight(X, self.feature)
         return X
-
