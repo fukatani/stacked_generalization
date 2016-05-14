@@ -99,10 +99,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 blend_train[cv_index, j] = self._get_child_predict(now_learner, xs_cv)
                 if test_index is not None:
                     xs_test = xs_train[test_index]
-                    if self.stack_by_proba and hasattr(now_learner, 'predict_proba'):
-                        blend_test[test_index, j] = now_learner.predict_proba(xs_test)[:, 1]
-                    else:
-                        blend_test[test_index, j] = now_learner.predict(xs_test)
+                    blend_test[cv_index, j] = self._get_child_predict(now_learner, xs_test)
         return blend_train, blend_test
 
     def fit(self, xs_train, y_train):
