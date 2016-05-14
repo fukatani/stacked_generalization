@@ -122,6 +122,15 @@ class TestDataReader(DataReader):
         pid = all_data[:, 0]
         return pid, xs
 
+def write_result(pid, output, suffix=''):
+    import csv
+    import datetime
+    suffix += datetime.datetime.today().strftime("%Y-%m-%d-%H-%M-%S")
+    with open("predict_result_data_{0}.csv".format(suffix), "w") as f:
+        writer = csv.writer(f, lineterminator='\n')
+        writer.writerow(["PassengerId", "Survived"])
+        for pid, survived in zip(pid.astype(int), output.astype(int)):
+            writer.writerow([pid, survived])
 
 if __name__ == '__main__':
     train = True
@@ -149,7 +158,7 @@ if __name__ == '__main__':
         sl.fit(xs_train, y_train)
         score = sl.score(xs_test, y_test)
         print('score: {0}'.format(score))
-        print('oob_score: {0}'.format(sl.oob_score))
+        print('oob_score: {0}'.format(sl.oob_score_))
     if two_stage_cv:
         xs_train, y_train = train_dr.get_sample(-1)
         score = sl.two_stage_cv(xs_train, y_train)
@@ -168,4 +177,4 @@ if __name__ == '__main__':
         test_dr = TestDataReader('test.csv')
         pid, xs_test = test_dr.get_sample(-1)
         output = sl.predict(xs_test)
-        util.write_result(pid, output, sl.tostr())
+        write_result(pid, output, sl.tostr())

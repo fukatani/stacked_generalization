@@ -1,16 +1,6 @@
 from sklearn.cross_validation import KFold
 import numpy as np
 
-def write_result(pid, output, suffix=''):
-    import csv
-    import datetime
-    suffix += datetime.datetime.today().strftime("%Y-%m-%d-%H-%M-%S")
-    with open("predict_result_data_{0}.csv".format(suffix), "w") as f:
-        writer = csv.writer(f, lineterminator='\n')
-        writer.writerow(["PassengerId", "Survived"])
-        for pid, survived in zip(pid.astype(int), output.astype(int)):
-            writer.writerow([pid, survived])
-
 def multiple_feature_weight(self, blend, feature):
     assert blend.shape[0] == feature.shape[0]
     result = None
