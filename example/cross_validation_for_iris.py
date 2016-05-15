@@ -6,7 +6,6 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.cross_validation import StratifiedKFold
-from stacked_generalization.lib.util import TwoStageKFold
 
 iris = datasets.load_iris()
 rng = check_random_state(0)

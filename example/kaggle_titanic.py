@@ -139,7 +139,6 @@ if __name__ == '__main__':
                         'For trying this example, you should download "train.csv" from https://www.kaggle.com/c/titanic.')
 
     train = True
-    two_stage_cv = True
     full_cv = True
     test = False
 
@@ -164,10 +163,6 @@ if __name__ == '__main__':
         score = sl.score(xs_test, y_test)
         print('score: {0}'.format(score))
         print('oob_score: {0}'.format(sl.oob_score_))
-    if two_stage_cv:
-        xs_train, y_train = train_dr.get_sample(-1)
-        score = sl.two_stage_cv(xs_train, y_train)
-        print('twostage-cv score: {0}'.format(score))
     if full_cv: #cross validation
         sl = StackedClassifier(bclf, clfs, oob_score_flag=False,verbose=2)
         xs_train, y_train = train_dr.get_sample(-1)

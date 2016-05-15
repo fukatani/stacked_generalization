@@ -2,7 +2,6 @@
 from sklearn.cross_validation import StratifiedKFold
 from sklearn import metrics
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
-from util import TwoStageKFold
 from util import numpy_c_concatenate
 
 
@@ -49,14 +48,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.verbose = verbose
         self.MyKfold = Kfold
 
-    def _iter_for_kfold(self, skf):
-        if isinstance(skf, TwoStageKFold):
-            for i, (train_index, blend_index, test_index) in enumerate(skf):
-                yield i, (train_index, blend_index, test_index)
-        elif isinstance(skf, StratifiedKFold):
-            for i, (train_index, cv_index) in enumerate(skf):
-                yield i, (train_index, cv_index, None)
-
     def _fit_child(self, skf, xs_train, y_train):
         """Build stage0 models from the training set (xs_train, y_train).
 
@@ -85,7 +76,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             all_learner_key = str(type(clf)) + str(j)
             self.all_learner[all_learner_key] = []
             blend_train_j = None
-            for i, (train_index, cv_index, test_index) in self._iter_for_kfold(skf):
+            for i, (train_index, cv_index) in enumerate(skf):
                 now_learner = clone(clf)
                 self._out_to_console('Fold [{0}]'.format(i), 0)
 
@@ -101,12 +92,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 if blend_train_j is None:
                     blend_train_j = self._get_blend_init(y_train, now_learner)
                 blend_train_j[cv_index] = self._get_child_predict(now_learner, xs_cv)
-                if test_index is not None:
-                    xs_test = xs_train[test_index]
-                    blend_test_j = self._get_child_predict(now_learner, xs_test)
             blend_train = numpy_c_concatenate(blend_train, blend_train_j)
-            if test_index is not None:
-                blend_test = numpy_c_concatenate(blend_test, blend_test_j)
         return blend_train, blend_test
 
     def fit(self, xs_train, y_train):
@@ -255,26 +241,11 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def calc_oob_score(self, blend_train, y_train, skf):
         """Compute out-of-bag score"""
         scores = []
-        for _, (train_index, cv_index, _) in self._iter_for_kfold(skf):
+        for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
             scores.append(self.bclf.score(blend_train[cv_index], y_train[cv_index]))
         self.oob_score_ = sum(scores) / len(scores)
         self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
-
-    def two_stage_cv(self, xs_train, y_train):
-        """Compute two_stage_cv score"""
-        from util import TwoStageKFold
-        tkf = TwoStageKFold(y_train, self.n_folds)
-        blend_train, blend_test = self._fit_child(tkf, xs_train, y_train)
-        self._out_to_console('blend_train.shape = {0}'.format(blend_train.shape), 1)
-        self._out_to_console('blend_test.shape = {0}'.format(blend_test.shape), 1)
-
-        score = 0
-        for i, (_, blend_index, test_index) in self._iter_for_kfold(tkf):
-            self.bclf.fit(blend_train[blend_index], y_train[blend_index])
-            score += self.score(xs_train[test_index], y_train[test_index])
-        score /= len(tkf)
-        return score
 
     def _out_to_console(self, message, limit_verbose):
         if self.verbose > limit_verbose:
