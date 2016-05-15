@@ -12,6 +12,11 @@ def multiple_feature_weight(self, blend, feature):
                 result = np.c_[result, a_vec * b_vec]
     return result
 
+def numpy_c_concatenate(A, B):
+    if A is None:
+        return B
+    else:
+        return np.c_[A, B]
 
 class TwoStageKFold(KFold):
 

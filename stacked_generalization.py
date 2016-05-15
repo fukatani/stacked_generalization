@@ -3,6 +3,7 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn import metrics
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from util import TwoStageKFold
+from util import numpy_c_concatenate
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
@@ -77,12 +78,13 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         blend_test : array-like, shape = [n_samples]
             If you use TwoStageKFold, blended sample for test will be prepared.
         """
-        blend_train = np.zeros((xs_train.shape[0], len(self.clfs)))
-        blend_test = np.zeros((xs_train.shape[0], len(self.clfs)))
+        blend_train = None
+        blend_test = None
         for j, clf in enumerate(self.clfs):
             self._out_to_console('Training classifier [{0}]'.format(j), 0)
             all_learner_key = str(type(clf)) + str(j)
             self.all_learner[all_learner_key] = []
+            blend_train_j = None
             for i, (train_index, cv_index, test_index) in self._iter_for_kfold(skf):
                 now_learner = clone(clf)
                 self._out_to_console('Fold [{0}]'.format(i), 0)
@@ -96,10 +98,15 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 self.all_learner[all_learner_key].append(now_learner)
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
-                blend_train[cv_index, j] = self._get_child_predict(now_learner, xs_cv)
+                if blend_train_j is None:
+                    blend_train_j = self._get_blend_init(y_train, now_learner)
+                blend_train_j[cv_index] = self._get_child_predict(now_learner, xs_cv)
                 if test_index is not None:
                     xs_test = xs_train[test_index]
-                    blend_test[cv_index, j] = self._get_child_predict(now_learner, xs_test)
+                    blend_test_j = self._get_child_predict(now_learner, xs_test)
+            blend_train = numpy_c_concatenate(blend_train, blend_train_j)
+            if test_index is not None:
+                blend_test = numpy_c_concatenate(blend_test, blend_test_j)
         return blend_train, blend_test
 
     def fit(self, xs_train, y_train):
@@ -159,6 +166,13 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         blend_test = self._pre_propcess(blend_test)
         return self.bclf.predict_proba(blend_test)
 
+    def _get_blend_init(self, y_train, clf):
+        if self.stack_by_proba and hasattr(clf, 'predict_proba'):
+            width = clf.n_classes_ - 1
+        else:
+            width = 1
+        return np.zeros((y_train.size, width))
+
     def _make_blendX(self, xs_test):
         """Make blend sample for xs_test.
 
@@ -172,19 +186,22 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         blend_test : array of shape = [n_samples, n_stage0_models].
             Calc as the mean of the predictions of the cross validation set.
         """
-        blend_test = np.zeros((xs_test.shape[0], len(self.all_learner)))
+        blend_test = None
         for j, clfs in enumerate(self.all_learner.values()):
-            blend_test_j = np.zeros((xs_test.shape[0], self.n_folds))
+            blend_test_j = None
             for i, clf in enumerate(clfs):
-                blend_test_j[:, i] = self._get_child_predict(clf, xs_test)
-            blend_test[:, j] = blend_test_j.mean(1)
+                blend_test_j_temp = self._get_child_predict(clf, xs_test)
+                blend_test_j = numpy_c_concatenate(blend_test_j, blend_test_j_temp)
+            blend_test_temp = blend_test_j.mean(1)
+            blend_test = numpy_c_concatenate(blend_test, blend_test_temp)
         return blend_test
 
     def _get_child_predict(self, clf, X):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
-            return clf.predict_proba(X)[:, 1]
+            return clf.predict_proba(X)[:, 1:]
         else:
-            return clf.predict(X)
+            predict_result = clf.predict(X)
+            return predict_result.reshape(predict_result.size, 1)
 
     def predict(self, X):
         """Predict class for X.
