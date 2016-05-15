@@ -193,9 +193,12 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             blend_test_j = None
             for i, clf in enumerate(clfs):
                 blend_test_j_temp = self._get_child_predict(clf, xs_test)
-                blend_test_j = numpy_c_concatenate(blend_test_j, blend_test_j_temp)
-            blend_test_temp = blend_test_j.mean(1)
-            blend_test = numpy_c_concatenate(blend_test, blend_test_temp)
+                if blend_test_j is None:
+                    blend_test_j = blend_test_j_temp
+                else:
+                    blend_test_j += blend_test_j_temp
+            blend_test_j /= len(clfs) #convert to mean
+            blend_test = numpy_c_concatenate(blend_test, blend_test_j)
         return blend_test
 
     def _get_child_predict(self, clf, X):
