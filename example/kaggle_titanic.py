@@ -133,6 +133,11 @@ def write_result(pid, output, suffix=''):
             writer.writerow([pid, survived])
 
 if __name__ == '__main__':
+    import os
+    if not os.path.isfile('train.csv'):
+        raise Exception('This example is data analysis for Kaggle Titanic Competition.' +
+                        'For trying this example, you should download "train.csv" from https://www.kaggle.com/c/titanic.')
+
     train = True
     two_stage_cv = True
     full_cv = True
@@ -152,7 +157,7 @@ if __name__ == '__main__':
             ]
     sl = StackedClassifier(bclf, clfs, n_folds=3, verbose=2)
     #fsl = FWSLClassifier(bclf, clfs, feature=xs_train[:, 0])
-    if train:
+    if train:# evalute by hold-out and out-of-bugs
         sl = StackedClassifier(bclf, clfs, n_folds=3, verbose=2, oob_score_flag=True)
         xs_train, xs_test, y_train, y_test = train_dr.get_sample()
         sl.fit(xs_train, y_train)
@@ -163,7 +168,7 @@ if __name__ == '__main__':
         xs_train, y_train = train_dr.get_sample(-1)
         score = sl.two_stage_cv(xs_train, y_train)
         print('twostage-cv score: {0}'.format(score))
-    if full_cv:
+    if full_cv: #cross validation
         sl = StackedClassifier(bclf, clfs, oob_score_flag=False,verbose=2)
         xs_train, y_train = train_dr.get_sample(-1)
         score = []
@@ -171,7 +176,7 @@ if __name__ == '__main__':
             sl.fit(xs_train[train_index], y_train[train_index])
             score.append(sl.score(xs_train[test_index], y_train[test_index]))
         print('full-cv score: {0}'.format(score))
-    if test: #to pb leader board
+    if test: #to make pb leader board data.
         xs_train, y_train = train_dr.get_sample(-1)
         sl.fit(xs_train, y_train)
         test_dr = TestDataReader('test.csv')
