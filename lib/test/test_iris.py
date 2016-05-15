@@ -7,7 +7,6 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 
-from sklearn.tree.tree import SPARSE_SPLITTERS
 
 class TestStackedClassfier(unittest.TestCase):
     def setUp(self):
