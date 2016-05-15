@@ -1,5 +1,5 @@
-## Purpose
-Implemented machine learning ***stacking technic[1]*** as handy  library.
+# stacked_generalization
+Implemented machine learning ***stacking technic[1]*** as handy library in Python.
 
 
 ## feature:
@@ -9,9 +9,7 @@ Implemented machine learning ***stacking technic[1]*** as handy  library.
 ex.
 ```python
 from stacked_generalization.lib.stacking import StackedClassifier
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn import datasets, metrics
 iris = datasets.load_iris()
@@ -21,7 +19,6 @@ bclf = LogisticRegression(random_state=1)
 
 # Stage 0 models
 clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state=1),
-        ExtraTreesClassifier(n_estimators=30, criterion = 'gini', random_state=3),
         GradientBoostingClassifier(n_estimators=25, random_state=1),
         RidgeClassifier(random_state=1)]
 
@@ -32,14 +29,16 @@ score = metrics.accuracy_score(iris.target, classifier.predict(iris.data))
 print("Accuracy: %f" % score)
 ```
 
-Stacked learning model is used as sk-learn model, so you can replace model such as *RandomForestClassifier* to *stacked model* easily in your scripts.
+More detail example is here.
+https://github.com/fukatani/stacked_generalization/blob/master/example/cross_validation_for_iris.py
+
+Stacked learning model itself is used as sk-learn model, so you can replace model such as *RandomForestClassifier* to *stacked model* easily in your scripts.
 
 #####2) Evaluation model by out-of-bugs score.
-In general, CV (cross validation) is used for evaluting models.
-But stacking technic itself uses CV to stage0. So if you use CV for entire stacked model, *each stage 0 model are fitted n_folds squared times.*
-Recent data analysis competitor sometimes uses over 1000 models for stage0, computational cost can be significent.
-Therefore, as refered in [2], we implemented CV only for stage1 model.
-For example, when we get 3 blends (n_folds=3), 2 blends are used for stage 1 fitting. The remaining one data is used for model test. Repitation this cycle for all 3 blends, and averaging these scores, you can get score as oob (out-of-bugs) *with only n_fold times stage0 fitting.*
+Stacking technic itself uses CV to stage0. So if you use CV for entire stacked model, ***each stage 0 model are fitted n_folds squared times.***
+Sometimes its computational cost can be significent,therefore we implemented CV only for stage1[2].
+
+For example, when we get 3 blends (stage0 prediction), 2 blends are used for stage 1 fitting. The remaining one blend is used for model test. Repitation this cycle for all 3 blends, and averaging scores, we can get oob (out-of-bugs) score ***with only n_fold times stage0 fitting.***
 
 ex.
 ```python
@@ -58,17 +57,6 @@ print("Accuracy: %f" % sl.oob_score_)
 ```
 git clone https://github.com/fukatani/stacked_generalization.git
 ```
-
-## Example
-
-Here is iris classification example.
-https://github.com/fukatani/stacked_generalization/blob/master/example/cross_validation_for_iris.py
-
-## Todo
-* Regression
-* Gridsearch for stacking architecture
-* Save blend sample
-* Feature Weighted Linear Stacking
 
 ## License
 
