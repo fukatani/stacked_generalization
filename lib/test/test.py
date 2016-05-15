@@ -6,7 +6,8 @@ import numpy as np
 class TestUtil(unittest.TestCase):
 
     def test_twostage_Kfold(self):
-        tsk = TwoStageKFold(8, n_folds=3)
+        y = np.array([0, 1, 2, 3, 4, 5, 6, 7])
+        tsk = TwoStageKFold(y, n_folds=3)
         tsk_list = list(tsk)
 
         train_index, blend_index, test_index = tsk_list[0]

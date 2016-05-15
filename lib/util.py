@@ -1,4 +1,4 @@
-from sklearn.cross_validation import KFold
+from sklearn.cross_validation import StratifiedKFold
 import numpy as np
 
 def multiple_feature_weight(self, blend, feature):
@@ -18,15 +18,16 @@ def numpy_c_concatenate(A, B):
     else:
         return np.c_[A, B]
 
-class TwoStageKFold(KFold):
+class TwoStageKFold(StratifiedKFold):
 
-    def __init__(self, n, n_folds=3, shuffle=False,
+    def __init__(self, y, n_folds=3, shuffle=False,
                  random_state=None):
-        super(KFold, self).__init__(n, n_folds, shuffle, random_state)
-        self.idxs = np.arange(n)
+        super(TwoStageKFold, self).__init__(y, n_folds, shuffle, random_state)
         if shuffle:
             rng = check_random_state(self.random_state)
             rng.shuffle(self.idxs)
+        self.n = y.size
+        self.idxs = np.arange(self.n)
 
     def __iter__(self):
         ind = np.arange(self.n)

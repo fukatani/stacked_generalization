@@ -6,6 +6,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.cross_validation import StratifiedKFold
+from stacked_generalization.lib.util import TwoStageKFold
 
 iris = datasets.load_iris()
 rng = check_random_state(0)
@@ -27,7 +28,8 @@ sl = StackedClassifier(bclf,
                        n_folds=3,
                        verbose=0,
                        stack_by_proba=True,
-                       oob_score_flag=True)
+                       oob_score_flag=True,
+                       )
 
 # cross validation
 cv_score = 0

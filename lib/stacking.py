@@ -50,12 +50,12 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.MyKfold = Kfold
 
     def _iter_for_kfold(self, skf):
-        if isinstance(skf, StratifiedKFold):
-            for i, (train_index, cv_index) in enumerate(skf):
-                yield i, (train_index, cv_index, None)
-        elif isinstance(skf, TwoStageKFold):
+        if isinstance(skf, TwoStageKFold):
             for i, (train_index, blend_index, test_index) in enumerate(skf):
                 yield i, (train_index, blend_index, test_index)
+        elif isinstance(skf, StratifiedKFold):
+            for i, (train_index, cv_index) in enumerate(skf):
+                yield i, (train_index, cv_index, None)
 
     def _fit_child(self, skf, xs_train, y_train):
         """Build stage0 models from the training set (xs_train, y_train).
@@ -264,7 +264,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def two_stage_cv(self, xs_train, y_train):
         """Compute two_stage_cv score"""
         from util import TwoStageKFold
-        tkf = TwoStageKFold(y_train.size, self.n_folds)
+        tkf = TwoStageKFold(y_train, self.n_folds)
         blend_train, blend_test = self._fit_child(tkf, xs_train, y_train)
         self._out_to_console('blend_train.shape = {0}'.format(blend_train.shape), 1)
         self._out_to_console('blend_test.shape = {0}'.format(blend_test.shape), 1)
