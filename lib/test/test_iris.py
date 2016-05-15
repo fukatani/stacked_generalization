@@ -1,7 +1,7 @@
 import unittest
 from sklearn import datasets
 from sklearn.utils.validation import check_random_state
-from stacked_generalization import StackedClassifier, FWLSClassifier
+from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier

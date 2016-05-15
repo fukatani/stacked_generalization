@@ -1,16 +1,9 @@
 import unittest
-from kaggle_titanic_util import DataReader
-from util import TwoStageKFold
+from stacked_generalization.lib.util import TwoStageKFold
 import numpy as np
 
 
-class TestTitanic(unittest.TestCase):
-    """
-    For execute this unittest, you have to download data from kaggle.
-    """
-
-    def setUp(self):
-        self.dr = DataReader('train.csv')
+class TestUtil(unittest.TestCase):
 
     def test_twostage_Kfold(self):
         tsk = TwoStageKFold(8, n_folds=3)

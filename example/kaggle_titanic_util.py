@@ -2,7 +2,7 @@ from sklearn.cross_validation import StratifiedKFold
 from sklearn import preprocessing
 from sklearn.linear_model import LogisticRegression, RidgeClassifier, Ridge
 from sklearn.preprocessing import OneHotEncoder, LabelBinarizer
-from stacked_generalization import StackedClassifier, FWLSClassifier
+from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
