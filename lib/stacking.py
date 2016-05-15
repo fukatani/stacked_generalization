@@ -2,7 +2,8 @@
 from sklearn.cross_validation import StratifiedKFold
 from sklearn import metrics
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
-from util import numpy_c_concatenate
+from stacked_generalization.lib.util import numpy_c_concatenate
+from sklearn.metrics import r2_score
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
@@ -183,7 +184,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                     blend_test_j = blend_test_j_temp
                 else:
                     blend_test_j += blend_test_j_temp
-            blend_test_j /= len(clfs) #convert to mean
+            blend_test_j = blend_test_j / len(clfs) #convert to mean
             blend_test = numpy_c_concatenate(blend_test, blend_test_j)
         return blend_test
 
