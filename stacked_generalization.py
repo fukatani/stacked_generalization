@@ -125,6 +125,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self : object
             Returns self.
         """
+        self.n_classes_ = np.unique(y_train).shape[0]
+
         # Ready for cross validation
         skf = self.MyKfold(y_train, self.n_folds)
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
@@ -168,7 +170,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
     def _get_blend_init(self, y_train, clf):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
-            width = clf.n_classes_ - 1
+            width = self.n_classes_ - 1
         else:
             width = 1
         return np.zeros((y_train.size, width))
