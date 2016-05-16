@@ -1,5 +1,5 @@
 ﻿import numpy as np
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.cross_validation import StratifiedKFold, KFold
 from sklearn import metrics
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
@@ -115,7 +115,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.n_classes_ = np.unique(y_train).shape[0]
 
         # Ready for cross validation
-        skf = self.MyKfold(y_train, self.n_folds)
+        skf = self._make_kfold(y_train)
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
 
         #fit stage0 models.
@@ -195,6 +195,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             predict_result = clf.predict(X)
             return predict_result.reshape(predict_result.size, 1)
 
+    def _make_kfold(self, Y):
+        return self.MyKfold(Y, self.n_folds)
+
     def predict(self, X):
         """Predict class for X.
 
@@ -266,6 +269,55 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
     def _pre_propcess(self, X):
         return X
+
+
+class StackedRegressor(StackedClassifier):
+    def __init__(self,
+                 bclf,
+                 clfs,
+                 n_folds=3,
+                 oob_score_flag=False,
+                 verbose=0):
+        self.n_folds = n_folds
+        self.clfs = clfs
+        self.bclf = bclf
+        self.all_learner = {}
+        self.oob_score_flag = oob_score_flag
+        self.verbose = verbose
+        self.stack_by_proba = False
+
+    def predict(self, X):
+        """
+        The predicted value of an input sample is a vote by the StackedRegressor.
+
+        Parameters
+        ----------
+        X : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples. Internally, it will be converted to
+            ``dtype=np.float32`` and if a sparse matrix is provided
+            to a sparse ``csr_matrix``.
+
+        Returns
+        -------
+        y : array of shape = [n_samples]
+            The predicted values.
+        """
+        blend_test = self._make_blendX(X)
+        blend_test = self._pre_propcess(blend_test)
+        return self.bclf.predict(blend_test)
+
+    def _make_kfold(self, Y):
+        return KFold(Y.size, self.n_folds)
+
+    def calc_oob_score(self, blend_train, y_train, skf):
+        """Compute out-of-bag score"""
+        y_predict = np.zeros(y_train.shape)
+        for train_index, cv_index in skf:
+            self.bclf.fit(blend_train[train_index], y_train[train_index])
+            y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
+        self.oob_score_ = r2_score(y_predict, y_train)
+        self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
+
 
 class FWLSClassifier(StackedClassifier):
     """
