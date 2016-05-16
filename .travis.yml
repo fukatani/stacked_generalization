@@ -4,6 +4,8 @@ python:
   - 3.5
 before_script:
   - pip install numpy
+  - pip install scipy
   - pip install scikit-learn
 script:
   - python lib/test/test.py
+  - python example/cross_validation_for_iris.py
