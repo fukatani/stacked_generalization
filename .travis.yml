@@ -2,10 +2,11 @@ language: python
 python:
   - "2.7_with_system_site_packages"
 before_install:
-  - sudo apt-get install -qq python-numpy python-scipy python-sklearn
+  - sudo apt-get install -qq python-numpy python-scipy
+  - pip install sklearn
 script:
   - cd stacked_generalization/lib/test
   - python test.py
   - cd ../../example
-  - python stacked_generalization/example/cross_validation_for_iris.py
-  - python stacked_generalization/example/simple_regression.py
+  - python cross_validation_for_iris.py
+  - python simple_regression.py
