@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/fukatani/stacked_generalization.svg?branch=master](https://travis-ci.org/fukatani/stacked_generalization)
+
 # stacked_generalization
 Implemented machine learning ***stacking technic[1]*** as handy library in Python.
 
