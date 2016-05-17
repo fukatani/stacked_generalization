@@ -4,6 +4,8 @@ python:
 before_install:
   - sudo apt-get install -qq python-numpy python-scipy python-sklearn
 script:
-  - python stacked_generalization/lib/test/test.py
+  - cd stacked_generalization/lib/test
+  - python test.py
+  - cd ../../example
   - python stacked_generalization/example/cross_validation_for_iris.py
   - python stacked_generalization/example/simple_regression.py
