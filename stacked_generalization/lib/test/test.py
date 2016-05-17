@@ -1,4 +1,9 @@
 import unittest
+import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+
+
 from sklearn import datasets
 from sklearn.utils.validation import check_random_state
 from stacked_generalization.lib.stacking import StackedClassifier
