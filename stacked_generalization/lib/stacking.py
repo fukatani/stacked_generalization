@@ -4,6 +4,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.metrics import r2_score
+from collections import OrderedDict
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
@@ -44,7 +45,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.clfs = clfs
         self.bclf = bclf
         self.stack_by_proba = stack_by_proba
-        self.all_learner = {}
+        self.all_learner = OrderedDict()
         self.oob_score_flag = oob_score_flag
         self.verbose = verbose
         self.MyKfold = Kfold
@@ -257,7 +258,7 @@ class StackedRegressor(StackedClassifier):
         self.n_folds = n_folds
         self.clfs = clfs
         self.bclf = bclf
-        self.all_learner = {}
+        self.all_learner = OrderedDict()
         self.oob_score_flag = oob_score_flag
         self.verbose = verbose
         self.stack_by_proba = False
