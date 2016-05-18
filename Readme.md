@@ -32,7 +32,9 @@ print("Accuracy: %f" % score)
 ```
 
 More detail example is here.
-https://github.com/fukatani/stacked_generalization/blob/master/example/cross_validation_for_iris.py
+https://github.com/fukatani/stacked_generalization/blob/master/stacked_generalization/example/cross_validation_for_iris.py
+
+https://github.com/fukatani/stacked_generalization/blob/master/stacked_generalization/example/simple_regression.py
 
 Stacked learning model itself is used as sk-learn model, so you can replace model such as *RandomForestClassifier* to *stacked model* easily in your scripts.
 
