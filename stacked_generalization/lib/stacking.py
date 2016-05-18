@@ -1,8 +1,8 @@
 ﻿import numpy as np
 from sklearn.cross_validation import StratifiedKFold, KFold
-from sklearn import metrics
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
+from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.metrics import r2_score
 
 
@@ -84,7 +84,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 xs_now_train = xs_train[train_index]
                 y_now_train = y_train[train_index]
                 xs_cv = xs_train[cv_index]
-                y_cv = y_train[cv_index]
+                #y_cv = y_train[cv_index] no use
 
                 now_learner.fit(xs_now_train, y_now_train)
                 self.all_learner[all_learner_key].append(now_learner)
@@ -151,7 +151,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         p : array of shape = [n_samples, n_classes].
             The class probabilities of the input samples.
         """
-        blend_test = self._make_blendX(xs_test)
+        blend_test = self._make_blend_test(xs_test)
         blend_test = self._pre_propcess(blend_test)
         return self.bclf.predict_proba(blend_test)
 
@@ -162,8 +162,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             width = 1
         return np.zeros((y_train.size, width))
 
-    def _make_blendX(self, xs_test):
-        """Make blend sample for xs_test.
+    def _make_blend_test(self, xs_test):
+        """Make blend sample for test.
 
         Parameters
         ----------
@@ -217,30 +217,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         """
         proba = self.predict_proba(X)
         return np.argmax(proba, axis=1)
-
-    def score(self, xs_test, y_test):
-        """Prediction score for xs_test, y_test.
-
-        Parameters
-        ----------
-        xs_test : array-like or sparse matrix of shape = [n_samples, n_features]
-            The input samples. Internally, it will be converted to
-            ``dtype=np.float32`` and if a sparse matrix is provided
-            to a sparse ``csr_matrix``.
-
-        y_test : array of shape = [n_samples]
-            The predicted classes.
-
-        Returns
-        -------
-        y_test : array of shape = [n_samples]
-            The predicted classes.
-        """
-        y_test_predict = self.predict(xs_test)
-        self._out_to_csv('xs_test', xs_test, 2)
-        self._out_to_csv('y_test', y_test, 2)
-        self._out_to_csv('y_test_predict', y_test_predict, 2)
-        return metrics.accuracy_score(y_test, y_test_predict)
 
     def calc_oob_score(self, blend_train, y_train, skf):
         """Compute out-of-bag score"""
@@ -302,7 +278,7 @@ class StackedRegressor(StackedClassifier):
         y : array of shape = [n_samples]
             The predicted values.
         """
-        blend_test = self._make_blendX(X)
+        blend_test = self._make_blend_test(X)
         blend_test = self._pre_propcess(blend_test)
         return self.bclf.predict(blend_test)
 
@@ -342,5 +318,5 @@ class FWLSClassifier(StackedClassifier):
         self.feature = feature
 
     def _pre_propcess(self, X):
-        X = util.multiple_feature_weight(X, self.feature)
+        X = multiple_feature_weight(X, self.feature)
         return X
