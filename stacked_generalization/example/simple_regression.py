@@ -8,8 +8,6 @@ from stacked_generalization.lib.stacking import StackedRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
 
 
