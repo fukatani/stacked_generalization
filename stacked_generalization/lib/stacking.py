@@ -5,6 +5,7 @@ from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.metrics import r2_score
 from collections import OrderedDict
+from sklearn.preprocessing import LabelBinarizer
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
@@ -160,7 +161,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
             width = self.n_classes_ - 1
         elif hasattr(clf, 'predict'):
-            width = 1
+            width = self.n_classes_
         elif hasattr(clf, 'n_components'):
             width = clf.n_components
         else:
@@ -198,7 +199,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             return clf.predict_proba(X)[:, 1:]
         elif hasattr(clf, 'predict'):
             predict_result = clf.predict(X)
-            return predict_result.reshape(predict_result.size, 1)
+            lb = LabelBinarizer()
+            lb.fit(predict_result)
+            return lb.fit_transform(predict_result)
         else:
             return clf.fit_transform(X)
 
@@ -300,6 +303,20 @@ class StackedRegressor(StackedClassifier):
             y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
         self.oob_score_ = r2_score(y_predict, y_train)
         self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
+
+    def _get_blend_init(self, y_train, clf):
+        if hasattr(clf, 'predict'):
+            width = 1
+        elif hasattr(clf, 'n_components'):
+            width = clf.n_components
+        return np.zeros((y_train.size, width))
+
+    def _get_child_predict(self, clf, X):
+        if hasattr(clf, 'predict'):
+            predict_result = clf.predict(X)
+            return predict_result.reshape(predict_result.size, 1)
+        else:
+            return clf.fit_transform(X)
 
 
 class FWLSClassifier(StackedClassifier):
