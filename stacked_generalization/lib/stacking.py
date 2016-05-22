@@ -159,8 +159,12 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def _get_blend_init(self, y_train, clf):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
             width = self.n_classes_ - 1
-        else:
+        elif hasattr(clf, 'predict'):
             width = 1
+        elif hasattr(clf, 'n_components'):
+            width = clf.n_components
+        else:
+            raise Exception('Unimplemented for {0}'.format(type(clf)))
         return np.zeros((y_train.size, width))
 
     def _make_blend_test(self, xs_test):
@@ -192,9 +196,11 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def _get_child_predict(self, clf, X):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
             return clf.predict_proba(X)[:, 1:]
-        else:
+        elif hasattr(clf, 'predict'):
             predict_result = clf.predict(X)
             return predict_result.reshape(predict_result.size, 1)
+        else:
+            return clf.fit_transform(X)
 
     def _make_kfold(self, Y):
         return self.MyKfold(Y, self.n_folds)
