@@ -9,6 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import AdaBoostClassifier
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.cross_validation import StratifiedKFold
 from sklearn.manifold import TSNE
@@ -28,8 +29,9 @@ clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state
         GradientBoostingClassifier(n_estimators=25, random_state=1),
         GradientBoostingClassifier(n_estimators=30, random_state=2),
         #GradientBoostingClassifier(n_estimators=30, random_state=3),
+        #KNeighborsClassifier(),
         RidgeClassifier(random_state=1),
-        TSNE(n_components=2)
+        #TSNE(n_components=2)
         ]
 
 sc = StackedClassifier(bclf,

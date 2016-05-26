@@ -3,7 +3,7 @@ from sklearn.cross_validation import StratifiedKFold, KFold
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import multiple_feature_weight
-from sklearn.metrics import r2_score
+from sklearn.metrics import mean_squared_error
 from collections import OrderedDict
 from sklearn.preprocessing import LabelBinarizer
 
@@ -295,13 +295,13 @@ class StackedRegressor(StackedClassifier):
     def _make_kfold(self, Y):
         return KFold(Y.size, self.n_folds)
 
-    def calc_oob_score(self, blend_train, y_train, skf):
+    def calc_oob_score(self, blend_train, y_train, skf, metrics=mean_squared_error):
         """Compute out-of-bag score"""
         y_predict = np.zeros(y_train.shape)
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
             y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
-        self.oob_score_ = r2_score(y_predict, y_train)
+        self.oob_score_ = metrics(y_predict, y_train)
         self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
     def _get_blend_init(self, y_train, clf):
