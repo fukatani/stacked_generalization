@@ -29,9 +29,9 @@ clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state
         GradientBoostingClassifier(n_estimators=25, random_state=1),
         GradientBoostingClassifier(n_estimators=30, random_state=2),
         #GradientBoostingClassifier(n_estimators=30, random_state=3),
-        #KNeighborsClassifier(),
+        KNeighborsClassifier(),
         RidgeClassifier(random_state=1),
-        #TSNE(n_components=2)
+        TSNE(n_components=2)
         ]
 
 sc = StackedClassifier(bclf,

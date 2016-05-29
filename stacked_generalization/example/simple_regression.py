@@ -26,8 +26,8 @@ regs = [RandomForestRegressor(n_estimators=50, random_state=1),
         GradientBoostingRegressor(n_estimators=25, random_state=1),
         GradientBoostingRegressor(n_estimators=30, random_state=2),
         Ridge(),
-        ExtraTreesRegressor(),
-        TSNE()
+        ExtraTreesRegressor(n_estimators=50),
+        TSNE(n_components=2)
         ]
 
 sr = StackedRegressor(breg,
