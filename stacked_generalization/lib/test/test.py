@@ -19,6 +19,8 @@ from sklearn.metrics import mean_squared_error
 from sklearn.utils.testing import assert_less
 import numpy as np
 from stacked_generalization.lib.util import numpy_c_concatenate
+from stacked_generalization.lib.util import saving_predict_proba
+from stacked_generalization.lib.util import get_model_id
 
 
 class TestStackedClassfier(unittest.TestCase):
@@ -85,6 +87,14 @@ class TestStackedClassfier(unittest.TestCase):
         np.testing.assert_equal(numpy_c_concatenate(A, B), B)
         A = np.array([[0], [1]])
         np.testing.assert_equal(numpy_c_concatenate(A, B), [[0,1,2], [1,3,4]])
+
+    def test_save_prediction(self):
+        model = RandomForestClassifier()
+        model.id = get_model_id(model)
+        model.fit(self.iris.data, self.iris.target)
+        indexes = np.fromfunction(lambda x: x, (self.iris.data.shape[0], ), dtype=np.int32)
+        saving_predict_proba(model, self.iris.data, indexes)
+        os.remove('RandomForestClassifier_0_149.csv')
 
 if __name__ == '__main__':
     unittest.main()

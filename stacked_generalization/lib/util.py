@@ -20,20 +20,24 @@ def numpy_c_concatenate(A, B):
     else:
         return np.c_[A, B]
 
-def saving_predict_proba(learner, X, index):
-    csv_file = "{0}_{1}_{2}.csv".format(learner.id, min(index), max(index))
+def saving_predict_proba(model, X, index):
+    csv_file = "{0}_{1}_{2}.csv".format(model.id, min(index), max(index))
     try:
         df = pd.read_csv(csv_file)
         proba = df.values[:, 1:]
         print("**** prediction is loaded from {0} ****".format(csv_file))
     except IOError:
-        proba = learner.predict_proba(X)
+        proba = model.predict_proba(X)
         df = pd.DataFrame({'index': index})
         for i in range(proba.shape[1]):
             df["prediction" + str(i)] = proba[:, i]
         #print(df)
         df.to_csv(csv_file, index=False)
     return proba
+
+def get_model_id(model):
+    model_type = str(type(model))
+    return model_type[model_type.rfind(".")+1: model_type.rfind("'")]
 
 ##def saving_fit(learner, X, y, index):
 ##    import os
