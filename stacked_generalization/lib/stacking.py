@@ -6,6 +6,7 @@ from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.metrics import mean_squared_error
 from collections import OrderedDict
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.externals import joblib
 import util
 import os
 
@@ -96,7 +97,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                     now_learner.id = self.get_stage0_id(now_learner)
                 if self._is_saved(now_learner, cv_index):
                     print('Prediction cache exists: skip fitting.')
-                    #TODO load from pickle
+                    now_learner = joblib.load(self.save_dir + now_learner.id + '.pkl')
                     continue
                 self._out_to_console('Fold [{0}]'.format(i), 0)
 
@@ -108,7 +109,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 now_learner.fit(xs_now_train, y_now_train)
                 #TODO one file
                 if self.save_stage0:
-                    joblib.dump(self.save_dir + now_learner.id + '.pkl')
+                    joblib.dump(now_learner, self.save_dir + now_learner.id + '.pkl', compress=True)
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
                 if blend_train_j is None:

@@ -3,3 +3,4 @@
 build/
 dist/
 stacked_generalization.egg-info/
+*.pkl
