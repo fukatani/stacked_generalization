@@ -1,2 +1,5 @@
 *.csv
 *.pyc
+build/
+dist/
+stacked_generalization.egg-info/
