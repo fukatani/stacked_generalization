@@ -79,6 +79,8 @@ def get_model_id(model):
                     'None': 'N'}
     for key, value in replace_dict.items():
         model_type = model_type.replace(key, value)
+    if len(model_type) > 150:
+        model_type = model_type[:150]
     return model_type
 
 ##def saving_fit(learner, X, y, index):

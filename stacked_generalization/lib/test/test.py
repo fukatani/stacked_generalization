@@ -61,6 +61,9 @@ class TestStackedClassfier(unittest.TestCase):
         sl.fit(self.iris.data, self.iris.target)
         sl.score(self.iris.data, self.iris.target)
         self.assertGreater(score, 0.8, "Failed with score = {0}".format(score))
+        sl.fit(self.iris.data, self.iris.target)
+        sl.score(self.iris.data, self.iris.target)
+        self.assertGreater(score, 0.8, "Failed with score = {0}".format(score))
         import glob
         self.assertTrue(os.path.isfile('ExtraTreesClassifier_r0_3__m5_0p0__m4_2__m1_auto__m0_N__m3_1__m2_N__n0_30__b0_0__c1_gini__c0_N_0_61.csv'))
         for csv_file in glob.glob("*.csv"):

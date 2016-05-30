@@ -7,6 +7,7 @@ from sklearn.metrics import mean_squared_error
 from collections import OrderedDict
 from sklearn.preprocessing import LabelBinarizer
 import util
+import os
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
@@ -55,6 +56,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.MyKfold = Kfold
         self.save_stage0 = save_stage0
         self.save_dir = save_dir
+        for clf in clfs:
+            if not hasattr(clf, 'id'):
+                clf.id = self.save_dir + util.get_model_id(clf)
 
     def _fit_child(self, skf, xs_train, y_train):
         """Build stage0 models from the training set (xs_train, y_train).
@@ -86,6 +90,14 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             blend_train_j = None
             for i, (train_index, cv_index) in enumerate(skf):
                 now_learner = clone(clf)
+                self.all_learner[all_learner_key].append(now_learner)
+
+                if not hasattr(now_learner, 'id'):
+                    now_learner.id = self.get_stage0_id(now_learner)
+                if self._is_saved(now_learner, cv_index):
+                    print('Prediction cache exists: skip fitting.')
+                    #TODO load from pickle
+                    continue
                 self._out_to_console('Fold [{0}]'.format(i), 0)
 
                 xs_now_train = xs_train[train_index]
@@ -94,7 +106,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 #y_cv = y_train[cv_index] no use
 
                 now_learner.fit(xs_now_train, y_now_train)
-                self.all_learner[all_learner_key].append(now_learner)
+                #TODO one file
+                if self.save_stage0:
+                    joblib.dump(self.save_dir + now_learner.id + '.pkl')
                 # This output will be the basis for our blended classifier to train against,
                 # which is also the output of our classifiers
                 if blend_train_j is None:
@@ -173,6 +187,10 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             raise Exception('Unimplemented for {0}'.format(type(clf)))
         return np.zeros((y_train.size, width))
 
+    def _is_saved(self, model, index):
+        model_id = self.get_stage0_id(model)
+        return os.path.isfile("{0}_{1}_{2}.csv".format(model_id, min(index), max(index)))
+
     def _make_blend_test(self, xs_test, index=None):
         """Make blend sample for test.
 
@@ -202,8 +220,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def _get_child_predict(self, clf, X, index=None):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
             if self.save_stage0 and index is not None:
-                if not hasattr(clf, 'id'):
-                    clf.id = self.save_dir + util.get_model_id(clf)
                 proba = util.saving_predict_proba(clf, X, index)
             else:
                 proba = clf.predict_proba(X)
@@ -219,7 +235,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def _make_kfold(self, Y):
         return self.MyKfold(Y, self.n_folds)
 
-    def predict(self, X):
+    def predict(self, X, index=None):
         """Predict class for X.
 
         The predicted class of an input sample is a vote by the StackedClassifier.
@@ -236,7 +252,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         y : array of shape = [n_samples]
             The predicted classes.
         """
-        proba = self.predict_proba(X)
+        proba = self.predict_proba(X, index)
         return np.argmax(proba, axis=1)
 
     def calc_oob_score(self, blend_train, y_train, skf):
@@ -267,6 +283,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def _pre_propcess(self, X):
         return X
 
+    def get_stage0_id(self, model):
+        return self.save_dir + util.get_model_id(model)
 
 class StackedRegressor(StackedClassifier):
     def __init__(self,
@@ -275,7 +293,8 @@ class StackedRegressor(StackedClassifier):
                  n_folds=3,
                  oob_score_flag=False,
                  verbose=0,
-                 save_stage0=False):
+                 save_stage0=False,
+                 save_dir=''):
         self.n_folds = n_folds
         self.clfs = clfs
         self.bclf = bclf
@@ -284,6 +303,7 @@ class StackedRegressor(StackedClassifier):
         self.verbose = verbose
         self.stack_by_proba = False
         self.save_stage0 = save_stage0
+        self.save_dir = save_dir
 
     def predict(self, X, index=None):
         """
@@ -327,8 +347,6 @@ class StackedRegressor(StackedClassifier):
     def _get_child_predict(self, clf, X, index=None):
         if hasattr(clf, 'predict'):
             if self.save_stage0 and index is not None:
-                if not hasattr(clf, 'id'):
-                    clf.id = self.save_dir + util.get_model_id(clf)
                 predict_result = util.saving_predict(clf, X, index)
             else:
                 predict_result = clf.predict(X)
