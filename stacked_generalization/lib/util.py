@@ -35,13 +35,31 @@ def saving_predict_proba(model, X, index):
         df.to_csv(csv_file, index=False)
     return proba
 
+def saving_predict(model, X, index):
+    csv_file = "{0}_{1}_{2}.csv".format(model.id, min(index), max(index))
+    try:
+        df = pd.read_csv(csv_file)
+        prediction = df.values[:, 1:]
+        print("**** prediction is loaded from {0} ****".format(csv_file))
+    except IOError:
+        prediction = model.predict(X)
+        df = pd.DataFrame({'index': index})
+        for i in range(prediction.shape[1]):
+            df["prediction" + str(i)] = prediction[:, i]
+        #print(df)
+        df.to_csv(csv_file, index=False)
+    return prediction
+
 def get_model_id(model):
     model_type = str(type(model))
     model_type = model_type[model_type.rfind(".")+1: model_type.rfind("'")]
     param_dict = model.get_params()
+    ignore_list = ('n_jobs', 'oob_score', 'verbose', 'warm_start')
     new_param_dict = {}
     for key, value in sorted(param_dict.items(), key=lambda x: x[0]):
         i = 0
+        if key in ignore_list:
+            continue
         while True:
             new_key = key[0] + str(i)
             if not new_key in new_param_dict:

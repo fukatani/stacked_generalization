@@ -6,6 +6,7 @@ from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.metrics import mean_squared_error
 from collections import OrderedDict
 from sklearn.preprocessing import LabelBinarizer
+import util
 
 
 class StackedClassifier(BaseEstimator, ClassifierMixin):
@@ -41,7 +42,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                  stack_by_proba=True,
                  oob_score_flag=False,
                  Kfold=StratifiedKFold,
-                 verbose=0):
+                 verbose=0,
+                 save_stage0=False,
+                 save_dir=''):
         self.n_folds = n_folds
         self.clfs = clfs
         self.bclf = bclf
@@ -50,6 +53,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.oob_score_flag = oob_score_flag
         self.verbose = verbose
         self.MyKfold = Kfold
+        self.save_stage0 = save_stage0
+        self.save_dir = save_dir
 
     def _fit_child(self, skf, xs_train, y_train):
         """Build stage0 models from the training set (xs_train, y_train).
@@ -94,7 +99,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 # which is also the output of our classifiers
                 if blend_train_j is None:
                     blend_train_j = self._get_blend_init(y_train, now_learner)
-                blend_train_j[cv_index] = self._get_child_predict(now_learner, xs_cv)
+                blend_train_j[cv_index] = self._get_child_predict(now_learner, xs_cv, cv_index)
             blend_train = numpy_c_concatenate(blend_train, blend_train_j)
         return blend_train, blend_test
 
@@ -138,7 +143,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict_proba(self, xs_test):
+    def predict_proba(self, xs_test, index=None):
         """Predict class probabilities for X.
 
         The predicted class probabilities of an input sample is computed.
@@ -153,7 +158,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         p : array of shape = [n_samples, n_classes].
             The class probabilities of the input samples.
         """
-        blend_test = self._make_blend_test(xs_test)
+        blend_test = self._make_blend_test(xs_test, index)
         blend_test = self._pre_propcess(blend_test)
         return self.bclf.predict_proba(blend_test)
 
@@ -168,7 +173,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             raise Exception('Unimplemented for {0}'.format(type(clf)))
         return np.zeros((y_train.size, width))
 
-    def _make_blend_test(self, xs_test):
+    def _make_blend_test(self, xs_test, index=None):
         """Make blend sample for test.
 
         Parameters
@@ -185,7 +190,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         for j, clfs in enumerate(self.all_learner.values()):
             blend_test_j = None
             for i, clf in enumerate(clfs):
-                blend_test_j_temp = self._get_child_predict(clf, xs_test)
+                blend_test_j_temp = self._get_child_predict(clf, xs_test, index)
                 if blend_test_j is None:
                     blend_test_j = blend_test_j_temp
                 else:
@@ -194,9 +199,15 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             blend_test = numpy_c_concatenate(blend_test, blend_test_j)
         return blend_test
 
-    def _get_child_predict(self, clf, X):
+    def _get_child_predict(self, clf, X, index=None):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
-            return clf.predict_proba(X)[:, 1:]
+            if self.save_stage0 and index is not None:
+                if not hasattr(clf, 'id'):
+                    clf.id = self.save_dir + util.get_model_id(clf)
+                proba = util.saving_predict_proba(clf, X, index)
+            else:
+                proba = clf.predict_proba(X)
+            return proba[:, 1:]
         elif hasattr(clf, 'predict'):
             predict_result = clf.predict(X)
             lb = LabelBinarizer()
@@ -263,7 +274,8 @@ class StackedRegressor(StackedClassifier):
                  clfs,
                  n_folds=3,
                  oob_score_flag=False,
-                 verbose=0):
+                 verbose=0,
+                 save_stage0=False):
         self.n_folds = n_folds
         self.clfs = clfs
         self.bclf = bclf
@@ -271,8 +283,9 @@ class StackedRegressor(StackedClassifier):
         self.oob_score_flag = oob_score_flag
         self.verbose = verbose
         self.stack_by_proba = False
+        self.save_stage0 = save_stage0
 
-    def predict(self, X):
+    def predict(self, X, index=None):
         """
         The predicted value of an input sample is a vote by the StackedRegressor.
 
@@ -288,7 +301,7 @@ class StackedRegressor(StackedClassifier):
         y : array of shape = [n_samples]
             The predicted values.
         """
-        blend_test = self._make_blend_test(X)
+        blend_test = self._make_blend_test(X, index)
         blend_test = self._pre_propcess(blend_test)
         return self.bclf.predict(blend_test)
 
@@ -311,9 +324,14 @@ class StackedRegressor(StackedClassifier):
             width = clf.n_components
         return np.zeros((y_train.size, width))
 
-    def _get_child_predict(self, clf, X):
+    def _get_child_predict(self, clf, X, index=None):
         if hasattr(clf, 'predict'):
-            predict_result = clf.predict(X)
+            if self.save_stage0 and index is not None:
+                if not hasattr(clf, 'id'):
+                    clf.id = self.save_dir + util.get_model_id(clf)
+                predict_result = util.saving_predict(clf, X, index)
+            else:
+                predict_result = clf.predict(X)
             return predict_result.reshape(predict_result.size, 1)
         else:
             return clf.fit_transform(X)
@@ -333,12 +351,14 @@ class FWLSClassifier(StackedClassifier):
                  n_folds=3,
                  stack_by_proba=True,
                  verbose=0,
-                 feature=None):
+                 feature=None,
+                 save_stage0=False):
         super(FWLSClassifier, self).__init__(bclf,
                                             clfs,
                                             n_folds,
                                             stack_by_proba,
-                                            verbose)
+                                            verbose,
+                                            save_stage0)
         self.feature = feature
 
     def _pre_propcess(self, X):

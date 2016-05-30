@@ -39,6 +39,7 @@ class TestStackedClassfier(unittest.TestCase):
                 GradientBoostingClassifier(n_estimators=25, random_state=1),
                 RidgeClassifier(random_state=1),
                 ]
+
         for n_folds, stack_by_proba in self.iter_for_stack_param():
             sl = StackedClassifier(bclf,
                                    clfs,
@@ -52,6 +53,18 @@ class TestStackedClassfier(unittest.TestCase):
             self.assertGreater(score, 0.8, "Failed with score = {0}".format(sl.oob_score_))
             print('oob_score: {0} @n_folds={1}, stack_by_proba={2}'
                   .format(sl.oob_score_, sl.n_folds, sl.stack_by_proba))
+
+        sl = StackedClassifier(bclf,
+                               clfs,
+                               oob_score_flag=True,
+                               save_stage0=True)
+        sl.fit(self.iris.data, self.iris.target)
+        sl.score(self.iris.data, self.iris.target)
+        self.assertGreater(score, 0.8, "Failed with score = {0}".format(score))
+        import glob
+        self.assertTrue(os.path.isfile('ExtraTreesClassifier_r0_3__m5_0p0__m4_2__m1_auto__m0_N__m3_1__m2_N__n0_30__b0_0__c1_gini__c0_N_0_61.csv'))
+        for csv_file in glob.glob("*.csv"):
+            os.remove(csv_file)
 
     def iter_for_stack_param(self):
         yield 2, True
@@ -94,7 +107,7 @@ class TestStackedClassfier(unittest.TestCase):
         model.fit(self.iris.data, self.iris.target)
         indexes = np.fromfunction(lambda x: x, (self.iris.data.shape[0], ), dtype=np.int32)
         saving_predict_proba(model, self.iris.data, indexes)
-        os.remove('RandomForestClassifier_v0_0__r0_N__w0_0__m5_0p0__m4_2__n1_1__m1_auto__m0_N__m3_1__m2_N__n0_10__b0_1__c1_gini__c0_N__o0_0_0_149.csv')
+        os.remove('RandomForestClassifier_r0_N__m5_0p0__m4_2__m1_auto__m0_N__m3_1__m2_N__n0_10__b0_1__c1_gini__c0_N_0_149.csv')
 
 if __name__ == '__main__':
     unittest.main()
