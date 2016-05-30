@@ -4,6 +4,7 @@ python:
 before_install:
   - sudo apt-get install -qq python-numpy python-scipy
   - pip install sklearn
+  - pip install pandas
 script:
   - cd stacked_generalization/lib/test
   - python test.py
