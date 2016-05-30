@@ -37,7 +37,31 @@ def saving_predict_proba(model, X, index):
 
 def get_model_id(model):
     model_type = str(type(model))
-    return model_type[model_type.rfind(".")+1: model_type.rfind("'")]
+    model_type = model_type[model_type.rfind(".")+1: model_type.rfind("'")]
+    param_dict = model.get_params()
+    new_param_dict = {}
+    for key, value in sorted(param_dict.items(), key=lambda x: x[0]):
+        i = 0
+        while True:
+            new_key = key[0] + str(i)
+            if not new_key in new_param_dict:
+                new_param_dict[new_key] = value
+                break
+            i += 1
+    model_type += str(new_param_dict)
+    replace_dict = {'{': '_',
+                    '}': '',
+                    "'": "",
+                    '.': 'p',
+                    ',': '__',
+                    ':': '_',
+                    ' ': '',
+                    'True': '1',
+                    'False': '0',
+                    'None': 'N'}
+    for key, value in replace_dict.items():
+        model_type = model_type.replace(key, value)
+    return model_type
 
 ##def saving_fit(learner, X, y, index):
 ##    import os

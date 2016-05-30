@@ -94,7 +94,7 @@ class TestStackedClassfier(unittest.TestCase):
         model.fit(self.iris.data, self.iris.target)
         indexes = np.fromfunction(lambda x: x, (self.iris.data.shape[0], ), dtype=np.int32)
         saving_predict_proba(model, self.iris.data, indexes)
-        os.remove('RandomForestClassifier_0_149.csv')
+        os.remove('RandomForestClassifier_v0_0__r0_N__w0_0__m5_0p0__m4_2__n1_1__m1_auto__m0_N__m3_1__m2_N__n0_10__b0_1__c1_gini__c0_N__o0_0_0_149.csv')
 
 if __name__ == '__main__':
     unittest.main()
