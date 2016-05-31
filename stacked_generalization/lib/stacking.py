@@ -92,26 +92,24 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             for i, (train_index, cv_index) in enumerate(skf):
                 now_learner = clone(clf)
                 self.all_learner[all_learner_key].append(now_learner)
-
-                if not hasattr(now_learner, 'id'):
-                    now_learner.id = self.get_stage0_id(now_learner)
-                if self._is_saved(now_learner, cv_index):
-                    print('Prediction cache exists: skip fitting.')
-                    now_learner = joblib.load(self.save_dir + now_learner.id + '.pkl')
-                    continue
-                self._out_to_console('Fold [{0}]'.format(i), 0)
-
                 xs_now_train = xs_train[train_index]
                 y_now_train = y_train[train_index]
                 xs_cv = xs_train[cv_index]
                 #y_cv = y_train[cv_index] no use
 
-                now_learner.fit(xs_now_train, y_now_train)
-                #TODO one file
-                if self.save_stage0:
-                    joblib.dump(now_learner, self.save_dir + now_learner.id + '.pkl', compress=True)
-                # This output will be the basis for our blended classifier to train against,
-                # which is also the output of our classifiers
+                if not hasattr(now_learner, 'id'):
+                    now_learner.id = self.get_stage0_id(now_learner)
+
+                if self.save_stage0 and self._is_saved(now_learner, cv_index):
+                    print('Prediction cache exists: skip fitting.')
+                    now_learner = joblib.load(self.save_dir + now_learner.id + '.pkl')
+                    self.all_learner[all_learner_key][-1] = now_learner
+                else:
+                    self._out_to_console('Fold [{0}]'.format(i), 0)
+                    now_learner.fit(xs_now_train, y_now_train)
+                    if self.save_stage0:
+                        joblib.dump(now_learner, self.save_dir + now_learner.id + '.pkl', compress=True)
+
                 if blend_train_j is None:
                     blend_train_j = self._get_blend_init(y_train, now_learner)
                 blend_train_j[cv_index] = self._get_child_predict(now_learner, xs_cv, cv_index)
