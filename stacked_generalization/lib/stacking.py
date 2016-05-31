@@ -100,15 +100,16 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 if not hasattr(now_learner, 'id'):
                     now_learner.id = self.get_stage0_id(now_learner)
 
+                dump_file = "{0}_{1}_{2}.pkl".format(now_learner.id, min(cv_index), max(cv_index))
                 if self.save_stage0 and self._is_saved(now_learner, cv_index):
                     print('Prediction cache exists: skip fitting.')
-                    now_learner = joblib.load(now_learner.id + '.pkl')
+                    now_learner = joblib.load(dump_file)
                     self.all_learner[all_learner_key][-1] = now_learner
                 else:
                     self._out_to_console('Fold [{0}]'.format(i), 0)
                     now_learner.fit(xs_now_train, y_now_train)
                     if self.save_stage0:
-                        joblib.dump(now_learner, now_learner.id + '.pkl', compress=True)
+                        joblib.dump(now_learner, dump_file, compress=True)
 
                 if blend_train_j is None:
                     blend_train_j = self._get_blend_init(y_train, now_learner)
