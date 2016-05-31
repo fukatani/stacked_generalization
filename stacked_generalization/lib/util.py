@@ -76,7 +76,11 @@ def get_model_id(model):
                     ' ': '',
                     'True': '1',
                     'False': '0',
-                    'None': 'N'}
+                    'None': 'N',
+                    '=': '_',
+                    '(': '_',
+                    ')': '_',
+                    '\n': '_'}
     for key, value in replace_dict.items():
         model_type = model_type.replace(key, value)
     if len(model_type) > 150:
