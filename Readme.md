@@ -2,9 +2,9 @@
 
 # stacked_generalization
 Implemented machine learning ***stacking technic[1]*** as handy library in Python.
+Feature weighted linear stacking is also available. (See https://github.com/fukatani/stacked_generalization/tree/master/stacked_generalization/example.)
 
-
-## feature:
+## feature
 
 #####1) Any scikit-learn model is availavle for Stage 0 and Stage 1 model. And stacked model itself has the same interface as scikit-learn library.
 
@@ -60,6 +60,7 @@ print("Accuracy: %f" % sl.oob_score_)
 
 ```
 git clone https://github.com/fukatani/stacked_generalization.git
+python setup.py install
 ```
 
 ## License
