@@ -1,7 +1,9 @@
 language: python
+allow_failures:
+  - python: "3.4_with_system_site_packages"
 python:
   - "2.7_with_system_site_packages"
-  - "3.4"
+  - "3.4_with_system_site_packages"
 before_install:
   - sudo apt-get install -qq python-numpy python-scipy
   - pip install sklearn
