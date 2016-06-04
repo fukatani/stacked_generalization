@@ -3,11 +3,10 @@ import numpy as np
 from sklearn.externals import joblib
 import pandas as pd
 
-def multiple_feature_weight(self, blend, feature):
-    assert blend.shape[0] == feature.shape[0]
+def multiple_feature_weight(blend, X):
     result = None
     for a_vec in blend.T:
-        for b_vec in feature.T:
+        for b_vec in X.T:
             if result is None:
                 result = a_vec * b_vec
             else:

@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 
 from sklearn import datasets
 from sklearn.utils.validation import check_random_state
-from stacked_generalization.lib.stacking import StackedClassifier
+from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
 from stacked_generalization.lib.stacking import StackedRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble import ExtraTreesClassifier
@@ -21,6 +21,7 @@ import numpy as np
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import saving_predict_proba
 from stacked_generalization.lib.util import get_model_id
+from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.cross_validation import StratifiedKFold
 import glob
 
@@ -137,6 +138,37 @@ class TestStackedClassfier(unittest.TestCase):
         indexes = np.fromfunction(lambda x: x, (self.iris.data.shape[0], ), dtype=np.int32)
         saving_predict_proba(model, self.iris.data, indexes)
         os.remove('RandomForestClassifier_r0_N__m5_0p0__m4_2__m1_auto__m0_N__m3_1__m2_N__n0_10__b0_1__c1_gini__c0_N_0_149.csv')
+
+    def test_fwls_classfier(self):
+        feature_func = lambda x: np.ones(x.shape)
+        bclf = LogisticRegression(random_state=1)
+        clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state=1),
+                RidgeClassifier(random_state=1),
+                ]
+        sl = FWLSClassifier(bclf,
+                            clfs,
+                            feature_func=feature_func,
+                            n_folds=3,
+                            verbose=0,
+                            Kfold=StratifiedKFold(self.iris.target, 3),
+                            stack_by_proba=False)
+        sl.fit(self.iris.data, self.iris.target)
+        score = sl.score(self.iris.data, self.iris.target)
+        self.assertGreater(score, 0.9, "Failed with score = {0}".format(score))
+
+    def test_multiple_feature_weight(self):
+        A = np.array([[1,2],[3,4],[5,6]])
+        B = np.array([[1],[1],[1]])
+        C = multiple_feature_weight(A, B)
+        np.testing.assert_equal(C, A)
+        B = np.array([[2],[2],[2]])
+        C = multiple_feature_weight(A, B)
+        np.testing.assert_equal(C, np.array([[2,4],[6,8],[10,12]]))
+        B = np.array([[1,2],[2,1],[1,2]])
+        C = multiple_feature_weight(A, B)
+        np.testing.assert_equal(C, np.array([[ 1,  2,  2,  4],
+                                             [ 6,  3,  8,  4],
+                                             [ 5, 10,  6, 12]]))
 
 if __name__ == '__main__':
     unittest.main()

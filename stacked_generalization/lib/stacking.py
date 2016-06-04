@@ -157,7 +157,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         # blending
         self._out_to_csv('blend_train', blend_train, 2)
         self._out_to_csv('y_train', y_train, 2)
-        blend_train = self._pre_propcess(blend_train)
+        blend_train = self._pre_propcess(blend_train, xs_train)
         self.bclf.fit(blend_train, y_train)
 
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
@@ -181,7 +181,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             The class probabilities of the input samples.
         """
         blend_test = self._make_blend_test(xs_test, index)
-        blend_test = self._pre_propcess(blend_test)
+        blend_test = self._pre_propcess(blend_test, xs_test)
         return self.bclf.predict_proba(blend_test)
 
     def _get_blend_init(self, y_train, clf):
@@ -297,8 +297,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                     break
             np.savetxt(file_name, data, delimiter=",")
 
-    def _pre_propcess(self, X):
-        return X
+    def _pre_propcess(self, blend, X):
+        return blend
 
     def get_stage0_id(self, model):
         return self.save_dir + util.get_model_id(model)
@@ -343,7 +343,7 @@ class StackedRegressor(StackedClassifier):
             The predicted values.
         """
         blend_test = self._make_blend_test(X, index)
-        blend_test = self._pre_propcess(blend_test)
+        blend_test = self._pre_propcess(blend_test, X)
         return self.bclf.predict(blend_test)
 
     def _make_kfold(self, Y):
@@ -381,19 +381,27 @@ class FWLSClassifier(StackedClassifier):
     def __init__(self,
                  bclf,
                  clfs,
+                 feature_func,
                  n_folds=3,
                  stack_by_proba=True,
+                 oob_score_flag=False,
+                 oob_metrics=accuracy_score,
+                 Kfold=None,
                  verbose=0,
-                 feature=None,
-                 save_stage0=False):
+                 save_stage0=False,
+                 save_dir=''):
         super(FWLSClassifier, self).__init__(bclf,
                                             clfs,
                                             n_folds,
                                             stack_by_proba,
+                                            oob_score_flag,
+                                            oob_metrics,
+                                            Kfold,
                                             verbose,
-                                            save_stage0)
-        self.feature = feature
+                                            save_stage0,
+                                            save_dir)
+        self.feature_func = feature_func
 
-    def _pre_propcess(self, X):
-        X = multiple_feature_weight(X, self.feature)
+    def _pre_propcess(self, blend, X):
+        X = multiple_feature_weight(blend, self.feature_func(X))
         return X
