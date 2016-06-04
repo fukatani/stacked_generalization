@@ -3,11 +3,10 @@ allow_failures:
   - python: "3.4_with_system_site_packages"
 python:
   - "2.7_with_system_site_packages"
-  - "3.4"
+# don't work
+#  - "3.4_with_system_site_packages"
 before_install:
   - sudo apt-get install -qq python-numpy python-scipy
-  - pip install numpy
-  - pip install scipy
   - pip install sklearn
   - pip install pandas
 script:
