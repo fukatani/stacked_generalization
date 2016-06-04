@@ -3,6 +3,7 @@ from sklearn.cross_validation import StratifiedKFold, KFold
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import multiple_feature_weight
+from sklearn.metrics import accuracy_score
 from sklearn.metrics import mean_squared_error
 from collections import OrderedDict
 from sklearn.preprocessing import LabelBinarizer
@@ -35,6 +36,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         If True, stacked clssfier calc out-of-bugs score after fitting.
         You can evaluate model by this score (with out CV).
 
+    oob_metrics : metrics for evaluation oob.
+
     verbose : int, optional (default=0)
         Controls the verbosity of the tree building process.
 
@@ -46,6 +49,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                  n_folds=3,
                  stack_by_proba=True,
                  oob_score_flag=False,
+                 oob_metrics=accuracy_score,
                  Kfold=None,
                  verbose=0,
                  save_stage0=False,
@@ -56,6 +60,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         self.stack_by_proba = stack_by_proba
         self.all_learner = OrderedDict()
         self.oob_score_flag = oob_score_flag
+        self.oob_metrics = oob_metrics
         self.verbose = verbose
         self.MyKfold = Kfold
         self.save_stage0 = save_stage0
@@ -263,11 +268,11 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
     def calc_oob_score(self, blend_train, y_train, skf):
         """Compute out-of-bag score"""
-        scores = []
+        y_predict = np.zeros(y_train.shape)
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
-            scores.append(self.bclf.score(blend_train[cv_index], y_train[cv_index]))
-        self.oob_score_ = sum(scores) / len(scores)
+            y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
+        self.oob_score_ = self.oob_metrics(y_predict, y_train)
         self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
     def _out_to_console(self, message, limit_verbose):
@@ -298,6 +303,7 @@ class StackedRegressor(StackedClassifier):
                  clfs,
                  n_folds=3,
                  oob_score_flag=False,
+                 oob_metrics=mean_squared_error,
                  Kfold=None,
                  verbose=0,
                  save_stage0=False,
@@ -307,6 +313,7 @@ class StackedRegressor(StackedClassifier):
         self.bclf = bclf
         self.all_learner = OrderedDict()
         self.oob_score_flag = oob_score_flag
+        self.oob_metrics = oob_metrics
         self.verbose = verbose
         self.stack_by_proba = False
         self.save_stage0 = save_stage0
@@ -339,13 +346,13 @@ class StackedRegressor(StackedClassifier):
         else:
             return KFold(Y.size, self.n_folds)
 
-    def calc_oob_score(self, blend_train, y_train, skf, metrics=mean_squared_error):
+    def calc_oob_score(self, blend_train, y_train, skf):
         """Compute out-of-bag score"""
         y_predict = np.zeros(y_train.shape)
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
             y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
-        self.oob_score_ = metrics(y_predict, y_train)
+        self.oob_score_ = self.oob_metrics(y_predict, y_train)
         self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
     def _get_blend_init(self, y_train, clf):
