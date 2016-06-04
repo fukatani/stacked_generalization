@@ -405,3 +405,38 @@ class FWLSClassifier(StackedClassifier):
     def _pre_propcess(self, blend, X):
         X = multiple_feature_weight(blend, self.feature_func(X))
         return X
+
+class FWLSRegressor(StackedRegressor):
+    """
+    Feature Weighted Linear Stacking Regressor.
+    References
+    ----------
+
+    .. [1] J. Sill1 et al, "Feature Weighted Linear Stacking", https://arxiv.org/abs/0911.0460, 2009.
+    """
+    def __init__(self,
+                 bclf,
+                 clfs,
+                 feature_func,
+                 n_folds=3,
+                 oob_score_flag=False,
+                 oob_metrics=mean_squared_error,
+                 Kfold=None,
+                 verbose=0,
+                 save_stage0=False,
+                 save_dir=''):
+        super(FWLSRegressor, self).__init__(bclf,
+                                            clfs,
+                                            n_folds,
+                                            oob_score_flag,
+                                            oob_metrics,
+                                            Kfold,
+                                            verbose,
+                                            save_stage0,
+                                            save_dir)
+
+        self.feature_func = feature_func
+
+    def _pre_propcess(self, blend, X):
+        X = multiple_feature_weight(blend, self.feature_func(X))
+        return X

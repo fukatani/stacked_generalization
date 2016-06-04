@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
 from sklearn import datasets
 from sklearn.utils.validation import check_random_state
 from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
-from stacked_generalization.lib.stacking import StackedRegressor
+from stacked_generalization.lib.stacking import StackedRegressor, FWLSRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
@@ -155,6 +155,30 @@ class TestStackedClassfier(unittest.TestCase):
         sl.fit(self.iris.data, self.iris.target)
         score = sl.score(self.iris.data, self.iris.target)
         self.assertGreater(score, 0.9, "Failed with score = {0}".format(score))
+
+    def test_fwls_regressor(self):
+        feature_func = lambda x: np.ones(x.shape)
+        bclf = LinearRegression()
+        clfs = [RandomForestRegressor(n_estimators=50, random_state=1),
+                GradientBoostingRegressor(n_estimators=25, random_state=1),
+                Ridge(random_state=1)]
+
+        # Friedman1
+        X, y = datasets.make_friedman1(n_samples=1200,
+                                       random_state=1,
+                                       noise=1.0)
+        X_train, y_train = X[:200], y[:200]
+        X_test, y_test = X[200:], y[200:]
+
+        sr = FWLSRegressor(bclf,
+                              clfs,
+                              feature_func,
+                              n_folds=3,
+                              verbose=0,
+                              oob_score_flag=True)
+        sr.fit(X_train, y_train)
+        mse = mean_squared_error(y_test, sr.predict(X_test))
+        assert_less(mse, 6.0)
 
     def test_multiple_feature_weight(self):
         A = np.array([[1,2],[3,4],[5,6]])
