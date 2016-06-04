@@ -15,7 +15,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import RidgeClassifier
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, log_loss
 from sklearn.utils.testing import assert_less
 import numpy as np
 from stacked_generalization.lib.util import numpy_c_concatenate
@@ -37,18 +37,16 @@ class TestStackedClassfier(unittest.TestCase):
     def test_stacked_classfier_extkfold(self):
         bclf = LogisticRegression(random_state=1)
         clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state=1),
-                ExtraTreesClassifier(n_estimators=30, criterion = 'gini', random_state=3),
-                GradientBoostingClassifier(n_estimators=25, random_state=1),
                 RidgeClassifier(random_state=1),
                 ]
-
         sl = StackedClassifier(bclf,
                                clfs,
                                n_folds=3,
                                verbose=0,
                                Kfold=StratifiedKFold(self.iris.target, 3),
                                stack_by_proba=False,
-                               oob_score_flag=False)
+                               oob_score_flag=True,
+                               oob_metrics=log_loss)
         sl.fit(self.iris.data, self.iris.target)
         score = sl.score(self.iris.data, self.iris.target)
         self.assertGreater(score, 0.9, "Failed with score = {0}".format(score))

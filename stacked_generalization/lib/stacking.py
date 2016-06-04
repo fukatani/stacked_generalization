@@ -268,11 +268,17 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
     def calc_oob_score(self, blend_train, y_train, skf):
         """Compute out-of-bag score"""
-        y_predict = np.zeros(y_train.shape)
+        if self.oob_metrics.__name__ == 'log_loss':
+            y_predict = np.zeros((y_train.size, self.n_classes_))
+        else:
+            y_predict = np.zeros(y_train.shape)
         for train_index, cv_index in skf:
             self.bclf.fit(blend_train[train_index], y_train[train_index])
-            y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
-        self.oob_score_ = self.oob_metrics(y_predict, y_train)
+            if self.oob_metrics.__name__ == 'log_loss':
+                y_predict[cv_index] = self.bclf.predict_proba(blend_train[cv_index])
+            else:
+                y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
+        self.oob_score_ = self.oob_metrics(y_train, y_predict)
         self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
     def _out_to_console(self, message, limit_verbose):
@@ -345,15 +351,6 @@ class StackedRegressor(StackedClassifier):
             return self.MyKfold
         else:
             return KFold(Y.size, self.n_folds)
-
-    def calc_oob_score(self, blend_train, y_train, skf):
-        """Compute out-of-bag score"""
-        y_predict = np.zeros(y_train.shape)
-        for train_index, cv_index in skf:
-            self.bclf.fit(blend_train[train_index], y_train[train_index])
-            y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
-        self.oob_score_ = self.oob_metrics(y_predict, y_train)
-        self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
     def _get_blend_init(self, y_train, clf):
         if hasattr(clf, 'predict'):
