@@ -21,6 +21,7 @@ import numpy as np
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import saving_predict_proba
 from stacked_generalization.lib.util import get_model_id
+from sklearn.cross_validation import StratifiedKFold
 import glob
 
 
@@ -32,6 +33,25 @@ class TestStackedClassfier(unittest.TestCase):
         iris.data = iris.data[perm]
         iris.target = iris.target[perm]
         self.iris = iris
+
+    def test_stacked_classfier_extkfold(self):
+        bclf = LogisticRegression(random_state=1)
+        clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state=1),
+                ExtraTreesClassifier(n_estimators=30, criterion = 'gini', random_state=3),
+                GradientBoostingClassifier(n_estimators=25, random_state=1),
+                RidgeClassifier(random_state=1),
+                ]
+
+        sl = StackedClassifier(bclf,
+                               clfs,
+                               n_folds=3,
+                               verbose=0,
+                               Kfold=StratifiedKFold(self.iris.target, 3),
+                               stack_by_proba=False,
+                               oob_score_flag=False)
+        sl.fit(self.iris.data, self.iris.target)
+        score = sl.score(self.iris.data, self.iris.target)
+        self.assertGreater(score, 0.9, "Failed with score = {0}".format(score))
 
     def test_stacked_classfier(self):
         bclf = LogisticRegression(random_state=1)

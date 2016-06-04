@@ -23,6 +23,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     n_folds : integer
      Number of folds at stage0 blending.
 
+    Kfold: scikit-learn KFold like
+        If Any Kfold is assigned, it will be used in blending.
+
     stack_by_proba : boolean
         If True and stage0 machine learning model has 'predict_proba',
         result of it is used in blending.
@@ -43,7 +46,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                  n_folds=3,
                  stack_by_proba=True,
                  oob_score_flag=False,
-                 Kfold=StratifiedKFold,
+                 Kfold=None,
                  verbose=0,
                  save_stage0=False,
                  save_dir=''):
@@ -233,7 +236,10 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             return clf.fit_transform(X)
 
     def _make_kfold(self, Y):
-        return self.MyKfold(Y, self.n_folds)
+        if self.MyKfold is not None:
+            return self.MyKfold
+        else:
+            return StratifiedKFold(Y, self.n_folds)
 
     def predict(self, X, index=None):
         """Predict class for X.
@@ -292,6 +298,7 @@ class StackedRegressor(StackedClassifier):
                  clfs,
                  n_folds=3,
                  oob_score_flag=False,
+                 Kfold=None,
                  verbose=0,
                  save_stage0=False,
                  save_dir=''):
@@ -304,6 +311,7 @@ class StackedRegressor(StackedClassifier):
         self.stack_by_proba = False
         self.save_stage0 = save_stage0
         self.save_dir = save_dir
+        self.MyKfold = Kfold
 
     def predict(self, X, index=None):
         """
@@ -326,7 +334,10 @@ class StackedRegressor(StackedClassifier):
         return self.bclf.predict(blend_test)
 
     def _make_kfold(self, Y):
-        return KFold(Y.size, self.n_folds)
+        if self.MyKfold is not None:
+            return self.MyKfold
+        else:
+            return KFold(Y.size, self.n_folds)
 
     def calc_oob_score(self, blend_train, y_train, skf, metrics=mean_squared_error):
         """Compute out-of-bag score"""
