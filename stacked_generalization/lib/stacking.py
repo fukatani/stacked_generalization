@@ -149,6 +149,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
         #fit stage0 models.
         blend_train, _ = self._fit_child(skf, xs_train, y_train)
+        blend_train = self._pre_propcess(blend_train, xs_train)
 
         #calc out of bugs score
         if self.oob_score_flag:
@@ -157,7 +158,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         # blending
         self._out_to_csv('blend_train', blend_train, 2)
         self._out_to_csv('y_train', y_train, 2)
-        blend_train = self._pre_propcess(blend_train, xs_train)
         self.bclf.fit(blend_train, y_train)
 
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
