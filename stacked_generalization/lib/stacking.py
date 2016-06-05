@@ -187,8 +187,10 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
     def _get_blend_init(self, y_train, clf):
         if self.stack_by_proba and hasattr(clf, 'predict_proba'):
             width = self.n_classes_ - 1
-        elif hasattr(clf, 'predict'):
+        elif hasattr(clf, 'predict') and isinstance(clf, ClassifierMixin):
             width = self.n_classes_
+        elif hasattr(clf, 'predict'):
+            width = 1
         elif hasattr(clf, 'n_components'):
             width = clf.n_components
         else:
@@ -234,9 +236,12 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             return proba[:, 1:]
         elif hasattr(clf, 'predict'):
             predict_result = clf.predict(X)
-            lb = LabelBinarizer()
-            lb.fit(predict_result)
-            return lb.fit_transform(predict_result)
+            if isinstance(clf, ClassifierMixin):
+                lb = LabelBinarizer()
+                lb.fit(predict_result)
+                return lb.fit_transform(predict_result)
+            else:
+                return predict_result.reshape((predict_result.size, 1))
         else:
             return clf.fit_transform(X)
 
