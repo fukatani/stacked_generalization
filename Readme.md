@@ -49,6 +49,12 @@ ex.
 sl = StackedClassifier(bclf, clfs, oob_score_flag=True)
 sl.fit(iris.target, iris.data)
 print("Accuracy: %f" % sl.oob_score_)
+
+```
+
+#####3) Caching stage1 blend_data and trained model. (optional)
+```python
+sl = StackedClassifier(bclf, clfs, save_stage0=True, save_dir='stack_temp')
 ```
 
 ## Software Requirement
