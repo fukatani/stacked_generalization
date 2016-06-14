@@ -215,9 +215,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
             Calc as the mean of the predictions of the cross validation set.
         """
         blend_test = None
-        for j, clfs in enumerate(self.all_learner.values()):
+        for clfs in self.all_learner.values():
             blend_test_j = None
-            for i, clf in enumerate(clfs):
+            for clf in clfs:
                 blend_test_j_temp = self._get_child_predict(clf, xs_test, index)
                 if blend_test_j is None:
                     blend_test_j = blend_test_j_temp
