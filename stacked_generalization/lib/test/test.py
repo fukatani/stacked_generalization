@@ -8,6 +8,7 @@ from sklearn import datasets
 from sklearn.utils.validation import check_random_state
 from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
 from stacked_generalization.lib.stacking import StackedRegressor, FWLSRegressor
+from stacked_generalization.lib.joblibed import JoblibedClassifier
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
@@ -15,7 +16,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import RidgeClassifier
 from sklearn.linear_model import Ridge
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, log_loss
+from sklearn.metrics import mean_squared_error, log_loss, accuracy_score
 from sklearn.utils.testing import assert_less
 import numpy as np
 from stacked_generalization.lib.util import numpy_c_concatenate
@@ -193,6 +194,30 @@ class TestStackedClassfier(unittest.TestCase):
         np.testing.assert_equal(C, np.array([[ 1,  2,  2,  4],
                                              [ 6,  3,  8,  4],
                                              [ 5, 10,  6, 12]]))
+
+class TestJoblibedClassfier(unittest.TestCase):
+    def setUp(self):
+        iris = datasets.load_iris()
+        rng = check_random_state(0)
+        iris.data = iris.data
+        iris.target = iris.target
+        self.iris = iris
+
+    def test_classifier(self):
+        rf = RandomForestClassifier()
+        jrf = JoblibedClassifier(rf, "rf")
+        jrf.fit(self.iris.data, self.iris.target)
+        index = [i for i in range(len(self.iris.data))]
+        prediction = jrf.predict(self.iris.data, index)
+        score = accuracy_score(self.iris.target, prediction)
+        self.assertGreater(score, 0.9, "Failed with score = {0}".format(score))
+        rf = RandomForestClassifier(n_estimators=20)
+        jrf = JoblibedClassifier(rf, "rf")
+        jrf.fit(self.iris.data, self.iris.target)
+        index = [i for i in range(len(self.iris.data))]
+        prediction2 = jrf.predict(self.iris.data, index)
+        self.assertTrue((prediction == prediction2).all())
+
 
 if __name__ == '__main__':
     unittest.main()
