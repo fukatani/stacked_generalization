@@ -23,13 +23,17 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
         self.estimator.id = 'j' + prefix
         self.skip_refit = skip_refit
 
-    def fit(self, xs_train, y_train):
-        if self.skip_refit and os.path.isfile('lib_{0}.txt'.format(self.prefix)):
-            return None
-        self.estimator.fit(xs_train, y_train)
-        log = open('lib_{0}.txt'.format(self.prefix), 'w')
-        log.write('logged')
-        log.close()
+    def fit(self, xs_train, y_train, index=None):
+        dump_file = ""
+        if index is not None:
+            dump_file = "{0}_{1}_{2}.pkl".format(self.estimator.id, min(index), max(index))
+        if self.skip_refit and os.path.isfile(dump_file):
+            if index is not None:
+                self.estimator = joblib.load(dump_file)
+        else:
+            self.estimator.fit(xs_train, y_train)
+            if index is not None:
+                joblib.dump(self.estimator, dump_file, compress=True)
         return self
 
     def predict_proba(self, xs_test, index=None):
