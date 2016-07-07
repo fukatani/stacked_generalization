@@ -202,6 +202,8 @@ class TestJoblibedClassfier(unittest.TestCase):
         iris.data = iris.data
         iris.target = iris.target
         self.iris = iris
+        for csv_file in glob.glob("*.csv"):
+            os.remove(csv_file)
 
     def test_classifier(self):
         index = [i for i in range(len(self.iris.data))]
