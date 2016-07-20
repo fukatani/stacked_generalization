@@ -17,16 +17,21 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
     def __init__(self,
                  estimator,
                  prefix,
-                 skip_refit=True):
+                 skip_refit=True,
+                 cache_dir='temp/'):
         self.estimator = estimator
         self.prefix = prefix
         self.estimator.id = 'j' + prefix
         self.skip_refit = skip_refit
+        self.cache_dir = cache_dir
 
     def fit(self, xs_train, y_train, index=None):
         dump_file = ""
         if index is not None:
-            dump_file = "{0}_{1}_{2}.pkl".format(self.estimator.id, min(index), max(index))
+            dump_file = "{0}{2}_{3}_{4}.pkl".format(self.cache_dir,
+                                                    self.estimator.id,
+                                                    min(index),
+                                                    max(index))
         if self.skip_refit and os.path.isfile(dump_file):
             if index is not None:
                 self.estimator = joblib.load(dump_file)
@@ -51,7 +56,10 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
         p : array of shape = [n_samples, n_classes].
             The class probabilities of the input samples.
         """
-        return util.saving_predict_proba(self.estimator, xs_test, index)
+        return util.saving_predict_proba(self.estimator,
+                                         xs_test,
+                                         index,
+                                         self.cache_dir)
 
     def predict(self, X, index=None):
         """Predict class for X.
