@@ -8,7 +8,7 @@ from sklearn import datasets
 from sklearn.utils.validation import check_random_state
 from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
 from stacked_generalization.lib.stacking import StackedRegressor, FWLSRegressor
-from stacked_generalization.lib.joblibed import JoblibedClassifier
+from stacked_generalization.lib.joblibed import JoblibedClassifier, JoblibedRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
@@ -24,6 +24,7 @@ from stacked_generalization.lib.util import saving_predict_proba
 from stacked_generalization.lib.util import get_model_id
 from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.cross_validation import StratifiedKFold
+from numpy.testing import assert_allclose
 import glob
 
 
@@ -209,18 +210,38 @@ class TestJoblibedClassfier(unittest.TestCase):
         index = [i for i in range(len(self.iris.data))]
 
         rf = RandomForestClassifier()
-        jrf = JoblibedClassifier(rf, "rf")
+        jrf = JoblibedClassifier(rf, "rf", cache_dir='')
         jrf.fit(self.iris.data, self.iris.target, index)
         prediction = jrf.predict(self.iris.data, index)
         score = accuracy_score(self.iris.target, prediction)
         self.assertGreater(score, 0.9, "Failed with score = {0}".format(score))
 
         rf = RandomForestClassifier(n_estimators=20)
-        jrf = JoblibedClassifier(rf, "rf")
+        jrf = JoblibedClassifier(rf, "rf", cache_dir='')
         jrf.fit(self.iris.data, self.iris.target)
         index = [i for i in range(len(self.iris.data))]
         prediction2 = jrf.predict(self.iris.data, index)
         self.assertTrue((prediction == prediction2).all())
+
+    def test_regressor(self):
+        X, y = datasets.make_friedman1(n_samples=1200,
+                                       random_state=1,
+                                       noise=1.0)
+        X_train, y_train = X[:200], y[:200]
+        index = [i for i in range(200)]
+
+        rf = RandomForestRegressor()
+        jrf = JoblibedRegressor(rf, "rfr", cache_dir='')
+        jrf.fit(X_train, y_train, index)
+        prediction = jrf.predict(X_train, index)
+        mse = mean_squared_error(y_train, prediction)
+        assert_less(mse, 6.0)
+
+        rf = RandomForestRegressor(n_estimators=20)
+        jrf = JoblibedRegressor(rf, "rfr", cache_dir='')
+        jrf.fit(X_train, y_train, index)
+        prediction2 = jrf.predict(X_train, index)
+        assert_allclose(prediction, prediction2)
 
 
 if __name__ == '__main__':

@@ -19,8 +19,8 @@ def numpy_c_concatenate(A, B):
     else:
         return np.c_[A, B]
 
-def saving_predict_proba(model, X, index):
-    csv_file = "{0}_{1}_{2}.csv".format(model.id, min(index), max(index))
+def saving_predict_proba(model, X, index, cache_dir=''):
+    csv_file = "{0}{1}_{2}_{3}.csv".format(cache_dir, model.id, min(index), max(index))
     try:
         df = pd.read_csv(csv_file)
         proba = df.values[:, 1:]
@@ -34,17 +34,18 @@ def saving_predict_proba(model, X, index):
         df.to_csv(csv_file, index=False)
     return proba
 
-def saving_predict(model, X, index):
-    csv_file = "{0}_{1}_{2}.csv".format(model.id, min(index), max(index))
+def saving_predict(model, X, index, cache_dir=''):
+    csv_file = "{0}{1}_{2}_{3}.csv".format(cache_dir, model.id, min(index), max(index))
     try:
         df = pd.read_csv(csv_file)
         prediction = df.values[:, 1:]
+        prediction = prediction.reshape([prediction.size,])
         print("**** prediction is loaded from {0} ****".format(csv_file))
     except IOError:
         prediction = model.predict(X)
         df = pd.DataFrame({'index': index})
-        for i in range(prediction.shape[1]):
-            df["prediction" + str(i)] = prediction[:, i]
+        prediction.reshape([prediction.shape[-1],])
+        df["prediction"] = prediction
         #print(df)
         df.to_csv(csv_file, index=False)
     return prediction

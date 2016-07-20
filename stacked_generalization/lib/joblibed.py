@@ -1,5 +1,5 @@
 ﻿import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone, RegressorMixin
 from sklearn.externals import joblib
 import util
 import os
@@ -28,7 +28,7 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
     def fit(self, xs_train, y_train, index=None):
         dump_file = ""
         if index is not None:
-            dump_file = "{0}{2}_{3}_{4}.pkl".format(self.cache_dir,
+            dump_file = "{0}{1}_{2}_{3}.pkl".format(self.cache_dir,
                                                     self.estimator.id,
                                                     min(index),
                                                     max(index))
@@ -80,3 +80,46 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
         """
         proba = self.predict_proba(X, index)
         return np.argmax(proba, axis=1)
+
+
+class JoblibedRegressor(BaseEstimator, RegressorMixin):
+    """A joblibed regressor.
+
+    Parameters
+    ----------
+    estimator : cache target model.
+    prefix : file prefix.
+
+    """
+    def __init__(self,
+                 estimator,
+                 prefix,
+                 skip_refit=True,
+                 cache_dir='temp/'):
+        self.estimator = estimator
+        self.prefix = prefix
+        self.estimator.id = 'j' + prefix
+        self.skip_refit = skip_refit
+        self.cache_dir = cache_dir
+
+    def fit(self, xs_train, y_train, index=None):
+        dump_file = ""
+        if index is not None:
+            dump_file = "{0}{1}_{2}_{3}.pkl".format(self.cache_dir,
+                                                    self.estimator.id,
+                                                    min(index),
+                                                    max(index))
+        if self.skip_refit and os.path.isfile(dump_file):
+            if index is not None:
+                self.estimator = joblib.load(dump_file)
+        else:
+            self.estimator.fit(xs_train, y_train)
+            if index is not None:
+                joblib.dump(self.estimator, dump_file, compress=True)
+        return self
+
+    def predict(self, xs_test, index=None):
+        return util.saving_predict(self.estimator,
+                                   xs_test,
+                                   index,
+                                   self.cache_dir)
