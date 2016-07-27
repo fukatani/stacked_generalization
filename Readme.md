@@ -65,8 +65,7 @@ sl = StackedClassifier(bclf, clfs, save_stage0=True, save_dir='stack_temp')
 ## Installation
 
 ```
-git clone https://github.com/fukatani/stacked_generalization.git
-python setup.py install
+pip install stacked_generalization
 ```
 
 ## License
