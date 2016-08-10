@@ -1,6 +1,6 @@
 ﻿import numpy as np
 from sklearn.cross_validation import StratifiedKFold, KFold
-from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import multiple_feature_weight
 from sklearn.metrics import accuracy_score
@@ -12,63 +12,12 @@ import util
 import os
 
 
-class StackedClassifier(BaseEstimator, ClassifierMixin):
-    """A stacking classifier.
+class BaseStacked(BaseEstimator):
+    """Base class for joblibed learner.
 
-    Parameters
-    ----------
-    bclf : stage1 model for stacking.
-
-    clfs : list of stage0 machine learning models.
-
-    n_folds : integer
-     Number of folds at stage0 blending.
-
-    Kfold: scikit-learn KFold like
-        If Any Kfold is assigned, it will be used in blending.
-
-    stack_by_proba : boolean
-        If True and stage0 machine learning model has 'predict_proba',
-        result of it is used in blending.
-        If not, result of 'predict' is used in blending.
-
-    oob_score_flag : boolean
-        If True, stacked clssfier calc out-of-bugs score after fitting.
-        You can evaluate model by this score (with out CV).
-
-    oob_metrics : metrics for evaluation oob.
-
-    verbose : int, optional (default=0)
-        Controls the verbosity of the tree building process.
-
-    .. [1] L. Breiman, "Stacked Regressions", Machine Learning, 24, 49-64 (1996).
+    Warning: This class should not be used directly. Use derived classes
+    instead.
     """
-    def __init__(self,
-                 bclf,
-                 clfs,
-                 n_folds=3,
-                 stack_by_proba=True,
-                 oob_score_flag=False,
-                 oob_metrics=accuracy_score,
-                 Kfold=None,
-                 verbose=0,
-                 save_stage0=False,
-                 save_dir=''):
-        self.n_folds = n_folds
-        self.clfs = clfs
-        self.bclf = bclf
-        self.stack_by_proba = stack_by_proba
-        self.all_learner = OrderedDict()
-        self.oob_score_flag = oob_score_flag
-        self.oob_metrics = oob_metrics
-        self.verbose = verbose
-        self.MyKfold = Kfold
-        self.save_stage0 = save_stage0
-        self.save_dir = save_dir
-        for clf in clfs:
-            if not hasattr(clf, 'id'):
-                clf.id = self.save_dir + util.get_model_id(clf)
-
     def _fit_child(self, skf, xs_train, y_train):
         """Build stage0 models from the training set (xs_train, y_train).
 
@@ -167,38 +116,6 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict_proba(self, xs_test, index=None):
-        """Predict class probabilities for X.
-
-        The predicted class probabilities of an input sample is computed.
-
-        Parameters
-        ----------
-        X : array-like or sparse matrix of shape = [n_samples, n_features]
-            The input samples.
-
-        Returns
-        -------
-        p : array of shape = [n_samples, n_classes].
-            The class probabilities of the input samples.
-        """
-        blend_test = self._make_blend_test(xs_test, index)
-        blend_test = self._pre_propcess(blend_test, xs_test)
-        return self.bclf.predict_proba(blend_test)
-
-    def _get_blend_init(self, y_train, clf):
-        if self.stack_by_proba and hasattr(clf, 'predict_proba'):
-            width = self.n_classes_ - 1
-        elif hasattr(clf, 'predict') and isinstance(clf, ClassifierMixin):
-            width = self.n_classes_
-        elif hasattr(clf, 'predict'):
-            width = 1
-        elif hasattr(clf, 'n_components'):
-            width = clf.n_components
-        else:
-            raise Exception('Unimplemented for {0}'.format(type(clf)))
-        return np.zeros((y_train.size, width))
-
     def _is_saved(self, model, index):
         model_id = self.get_stage0_id(model)
         return os.path.isfile(util.get_cache_file(model_id, index))
@@ -247,6 +164,134 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         else:
             return clf.fit_transform(X)
 
+    def _get_blend_init(self, y_train, clf):
+        if self.stack_by_proba and hasattr(clf, 'predict_proba'):
+            width = self.n_classes_ - 1
+        elif hasattr(clf, 'predict') and isinstance(clf, ClassifierMixin):
+            width = self.n_classes_
+        elif hasattr(clf, 'predict'):
+            width = 1
+        elif hasattr(clf, 'n_components'):
+            width = clf.n_components
+        else:
+            raise Exception('Unimplemented for {0}'.format(type(clf)))
+        return np.zeros((y_train.size, width))
+
+
+    def _out_to_console(self, message, limit_verbose):
+        if self.verbose > limit_verbose:
+            print(message)
+
+    def _out_to_csv(self, file_name, data, limit_verbose):
+        """write_out numpy array to csv"""
+        import os
+        file_name = 'data/{0}.csv'.format(file_name)
+        if self.verbose > limit_verbose:
+            while True:
+                if os.path.isfile(file_name):
+                    file_name = file_name.replace('.csv', '_.csv')
+                else:
+                    break
+            np.savetxt(file_name, data, delimiter=",")
+
+    def _pre_propcess(self, blend, X):
+        return blend
+
+    def get_stage0_id(self, model):
+        return self.save_dir + util.get_model_id(model)
+
+    def calc_oob_score(self, blend_train, y_train, skf):
+        """Compute out-of-bag score"""
+        if self.oob_metrics.__name__ == 'log_loss':
+            y_predict = np.zeros((y_train.size, self.n_classes_))
+        else:
+            y_predict = np.zeros(y_train.shape)
+        for train_index, cv_index in skf:
+            self.bclf.fit(blend_train[train_index], y_train[train_index])
+            if self.oob_metrics.__name__ == 'log_loss':
+                y_predict[cv_index] = self.bclf.predict_proba(blend_train[cv_index])
+            else:
+                y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
+        self.oob_score_ = self.oob_metrics(y_train, y_predict)
+        self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
+
+
+class StackedClassifier(BaseStacked, ClassifierMixin):
+    """A stacking classifier.
+
+    Parameters
+    ----------
+    bclf : stage1 model for stacking.
+
+    clfs : list of stage0 machine learning models.
+
+    n_folds : integer
+     Number of folds at stage0 blending.
+
+    Kfold: scikit-learn KFold like
+        If Any Kfold is assigned, it will be used in blending.
+
+    stack_by_proba : boolean
+        If True and stage0 machine learning model has 'predict_proba',
+        result of it is used in blending.
+        If not, result of 'predict' is used in blending.
+
+    oob_score_flag : boolean
+        If True, stacked clssfier calc out-of-bugs score after fitting.
+        You can evaluate model by this score (with out CV).
+
+    oob_metrics : metrics for evaluation oob.
+
+    verbose : int, optional (default=0)
+        Controls the verbosity of the tree building process.
+
+    .. [1] L. Breiman, "Stacked Regressions", Machine Learning, 24, 49-64 (1996).
+    """
+    def __init__(self,
+                 bclf,
+                 clfs,
+                 n_folds=3,
+                 stack_by_proba=True,
+                 oob_score_flag=False,
+                 oob_metrics=accuracy_score,
+                 Kfold=None,
+                 verbose=0,
+                 save_stage0=False,
+                 save_dir=''):
+        self.n_folds = n_folds
+        self.clfs = clfs
+        self.bclf = bclf
+        self.stack_by_proba = stack_by_proba
+        self.all_learner = OrderedDict()
+        self.oob_score_flag = oob_score_flag
+        self.oob_metrics = oob_metrics
+        self.verbose = verbose
+        self.MyKfold = Kfold
+        self.save_stage0 = save_stage0
+        self.save_dir = save_dir
+        for clf in clfs:
+            if not hasattr(clf, 'id'):
+                clf.id = self.save_dir + util.get_model_id(clf)
+
+    def predict_proba(self, xs_test, index=None):
+        """Predict class probabilities for X.
+
+        The predicted class probabilities of an input sample is computed.
+
+        Parameters
+        ----------
+        X : array-like or sparse matrix of shape = [n_samples, n_features]
+            The input samples.
+
+        Returns
+        -------
+        p : array of shape = [n_samples, n_classes].
+            The class probabilities of the input samples.
+        """
+        blend_test = self._make_blend_test(xs_test, index)
+        blend_test = self._pre_propcess(blend_test, xs_test)
+        return self.bclf.predict_proba(blend_test)
+
     def _make_kfold(self, Y):
         if self.MyKfold is not None:
             return self.MyKfold
@@ -273,44 +318,8 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
         proba = self.predict_proba(X, index)
         return np.argmax(proba, axis=1)
 
-    def calc_oob_score(self, blend_train, y_train, skf):
-        """Compute out-of-bag score"""
-        if self.oob_metrics.__name__ == 'log_loss':
-            y_predict = np.zeros((y_train.size, self.n_classes_))
-        else:
-            y_predict = np.zeros(y_train.shape)
-        for train_index, cv_index in skf:
-            self.bclf.fit(blend_train[train_index], y_train[train_index])
-            if self.oob_metrics.__name__ == 'log_loss':
-                y_predict[cv_index] = self.bclf.predict_proba(blend_train[cv_index])
-            else:
-                y_predict[cv_index] = self.bclf.predict(blend_train[cv_index])
-        self.oob_score_ = self.oob_metrics(y_train, y_predict)
-        self._out_to_console('oob_score: {0}'.format(self.oob_score_), 0)
 
-    def _out_to_console(self, message, limit_verbose):
-        if self.verbose > limit_verbose:
-            print(message)
-
-    def _out_to_csv(self, file_name, data, limit_verbose):
-        """write_out numpy array to csv"""
-        import os
-        file_name = 'data/{0}.csv'.format(file_name)
-        if self.verbose > limit_verbose:
-            while True:
-                if os.path.isfile(file_name):
-                    file_name = file_name.replace('.csv', '_.csv')
-                else:
-                    break
-            np.savetxt(file_name, data, delimiter=",")
-
-    def _pre_propcess(self, blend, X):
-        return blend
-
-    def get_stage0_id(self, model):
-        return self.save_dir + util.get_model_id(model)
-
-class StackedRegressor(StackedClassifier):
+class StackedRegressor(BaseStacked, RegressorMixin):
     def __init__(self,
                  bclf,
                  clfs,
