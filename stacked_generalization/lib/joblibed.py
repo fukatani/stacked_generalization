@@ -5,14 +5,11 @@ import util
 import os
 
 
-class JoblibedClassifier(BaseEstimator, ClassifierMixin):
-    """A joblibed classifier.
+class BaseJoblibed(BaseEstimator):
+    """Base class for joblibed learner.
 
-    Parameters
-    ----------
-    estimator : cache target model.
-    prefix : file prefix.
-
+    Warning: This class should not be used directly. Use derived classes
+    instead.
     """
     def __init__(self,
                  estimator,
@@ -41,6 +38,16 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
                 joblib.dump(self.estimator, dump_file, compress=True)
         return self
 
+
+class JoblibedClassifier(BaseJoblibed, ClassifierMixin):
+    """A joblibed classifier.
+
+    Parameters
+    ----------
+    estimator : cache target model.
+    prefix : file prefix.
+
+    """
     def predict_proba(self, xs_test, index=None):
         """Predict class probabilities for X.
 
@@ -82,7 +89,7 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
         return np.argmax(proba, axis=1)
 
 
-class JoblibedRegressor(BaseEstimator, RegressorMixin):
+class JoblibedRegressor(BaseJoblibed, RegressorMixin):
     """A joblibed regressor.
 
     Parameters
@@ -91,33 +98,6 @@ class JoblibedRegressor(BaseEstimator, RegressorMixin):
     prefix : file prefix.
 
     """
-    def __init__(self,
-                 estimator,
-                 prefix,
-                 skip_refit=True,
-                 cache_dir='temp/'):
-        self.estimator = estimator
-        self.prefix = prefix
-        self.estimator.id = 'j' + prefix
-        self.skip_refit = skip_refit
-        self.cache_dir = cache_dir
-
-    def fit(self, xs_train, y_train, index=None):
-        dump_file = ""
-        if index is not None:
-            dump_file = "{0}{1}_{2}_{3}.pkl".format(self.cache_dir,
-                                                    self.estimator.id,
-                                                    min(index),
-                                                    max(index))
-        if self.skip_refit and os.path.isfile(dump_file):
-            if index is not None:
-                self.estimator = joblib.load(dump_file)
-        else:
-            self.estimator.fit(xs_train, y_train)
-            if index is not None:
-                joblib.dump(self.estimator, dump_file, compress=True)
-        return self
-
     def predict(self, xs_test, index=None):
         return util.saving_predict(self.estimator,
                                    xs_test,
