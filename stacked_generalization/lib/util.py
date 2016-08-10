@@ -88,11 +88,16 @@ def get_model_id(model):
     return model_type
 
 def get_cache_file(model_id, index, cache_dir='', suffix='csv'):
-    return "{0}{1}_{2}_{3}.{4}".format(cache_dir,
-                                       model_id,
-                                       min(index),
-                                       max(index),
-                                       suffix)
+    # Identify index trick.
+    # If sum of first 20 index, recognize as the same index.
+    if len(index) < 20:
+        sum_index = sum(index)
+    else:
+        sum_index = sum(index[:20])
+    return "{0}{1}_{2}.{3}".format(cache_dir,
+                                   model_id,
+                                   sum_index,
+                                   suffix)
 
 ##def saving_fit(learner, X, y, index):
 ##    import os
