@@ -108,7 +108,9 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
                 if not hasattr(now_learner, 'id'):
                     now_learner.id = self.get_stage0_id(now_learner)
 
-                dump_file = "{0}_{1}_{2}.pkl".format(now_learner.id, min(cv_index), max(cv_index))
+                dump_file = util.get_cache_file(now_learner.id,
+                                                cv_index,
+                                                suffix='pkl')
                 if self.save_stage0 and self._is_saved(now_learner, cv_index):
                     print('Prediction cache exists: skip fitting.')
                     now_learner = joblib.load(dump_file)
@@ -199,7 +201,7 @@ class StackedClassifier(BaseEstimator, ClassifierMixin):
 
     def _is_saved(self, model, index):
         model_id = self.get_stage0_id(model)
-        return os.path.isfile("{0}_{1}_{2}.csv".format(model_id, min(index), max(index)))
+        return os.path.isfile(util.get_cache_file(model_id, index))
 
     def _make_blend_test(self, xs_test, index=None):
         """Make blend sample for test.

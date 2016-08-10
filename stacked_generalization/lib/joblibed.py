@@ -28,10 +28,10 @@ class JoblibedClassifier(BaseEstimator, ClassifierMixin):
     def fit(self, xs_train, y_train, index=None):
         dump_file = ""
         if index is not None:
-            dump_file = "{0}{1}_{2}_{3}.pkl".format(self.cache_dir,
-                                                    self.estimator.id,
-                                                    min(index),
-                                                    max(index))
+            dump_file = util.get_cache_file(self.estimator.id,
+                                            index,
+                                            cache_dir=self.cache_dir,
+                                            suffix='pkl')
         if self.skip_refit and os.path.isfile(dump_file):
             if index is not None:
                 self.estimator = joblib.load(dump_file)

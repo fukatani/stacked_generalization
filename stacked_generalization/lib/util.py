@@ -20,7 +20,7 @@ def numpy_c_concatenate(A, B):
         return np.c_[A, B]
 
 def saving_predict_proba(model, X, index, cache_dir=''):
-    csv_file = "{0}{1}_{2}_{3}.csv".format(cache_dir, model.id, min(index), max(index))
+    csv_file = get_cache_file(model.id, index, cache_dir)
     try:
         df = pd.read_csv(csv_file)
         proba = df.values[:, 1:]
@@ -35,7 +35,7 @@ def saving_predict_proba(model, X, index, cache_dir=''):
     return proba
 
 def saving_predict(model, X, index, cache_dir=''):
-    csv_file = "{0}{1}_{2}_{3}.csv".format(cache_dir, model.id, min(index), max(index))
+    csv_file = get_cache_file(model.id, index,cache_dir)
     try:
         df = pd.read_csv(csv_file)
         prediction = df.values[:, 1:]
@@ -86,6 +86,13 @@ def get_model_id(model):
     if len(model_type) > 150:
         model_type = model_type[:150]
     return model_type
+
+def get_cache_file(model_id, index, cache_dir='', suffix='csv'):
+    return "{0}{1}_{2}_{3}.{4}".format(cache_dir,
+                                       model_id,
+                                       min(index),
+                                       max(index),
+                                       suffix)
 
 ##def saving_fit(learner, X, y, index):
 ##    import os
