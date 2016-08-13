@@ -4,7 +4,9 @@
 Implemented machine learning ***stacking technic[1]*** as handy library in Python.
 Feature weighted linear stacking is also available. (See https://github.com/fukatani/stacked_generalization/tree/master/stacked_generalization/example.)
 
-## feature
+Including simple model cache system Joblibed claasifier and Joblibed Regressor.
+
+## Feature
 
 #####1) Any scikit-learn model is availavle for Stage 0 and Stage 1 model. And stacked model itself has the same interface as scikit-learn library.
 
@@ -57,6 +59,45 @@ print("Accuracy: %f" % sl.oob_score_)
 sl = StackedClassifier(bclf, clfs, save_stage0=True, save_dir='stack_temp')
 ```
 
+## Feature of Joblibed Classifier / Regressor
+
+Joblibed Classifier / Regressor is simple cache system for scikit-learn machine learning model.
+You can use it easily by minimum code modification.
+
+At first fitting and prediction, model calculation is performed normally.
+At the same time, model fitting result and prediction result are saved as *.pkl* and *.csv* respectively.
+
+**At second fitting and prediction, if cache is existence, model and prediction results will be loaded from cache and never recalculation.**
+
+
+e.g.
+```python
+from sklearn import datasets
+from sklearn.cross_validation import StratifiedKFold
+from sklearn.ensemble import RandomForestClassifier
+from stacked_generalization.lib.joblibed import JoblibedClassifier
+
+# Load iris
+iris = datasets.load_iris()
+
+# Declaration of Joblibed model
+rf = RandomForestClassifier(n_estimators=40)
+clf = JoblibedClassifier(rf, "rf")
+
+train_idx, test_idx = list(StratifiedKFold(iris.target, 3))[0]
+
+xs_train = iris.data[train_idx]
+y_train = iris.target[train_idx]
+xs_test = iris.data[test_idx]
+y_test = iris.target[test_idx]
+
+# Need to indicate sample for discriminating cache existence.
+clf.fit(xs_train, y_train, train_idx)
+score = clf.score(xs_test, y_test, test_idx)
+```
+
+See also https://github.com/fukatani/stacked_generalization/blob/master/stacked_generalization/lib/joblibed.py
+
 ## Software Requirement
 
 * Python (2.7 or later)
@@ -78,7 +119,7 @@ MIT License.
 
 Copyright (C) 2016, Ryosuke Fukatani
 
-Many part of the implementation is based on the following. Thanks!
+Many part of the implementation of stacking is based on the following. Thanks!
 https://github.com/log0/vertebral/blob/master/stacked_generalization.py
 
 ## Other
