@@ -20,8 +20,8 @@ def numpy_c_concatenate(A, B):
         return np.c_[A, B]
 
 def saving_predict_proba(model, X, index, cache_dir=''):
-    csv_file = get_cache_file(model.id, index, cache_dir)
     try:
+        csv_file = get_cache_file(model.id, index, cache_dir)
         df = pd.read_csv(csv_file)
         proba = df.values[:, 1:]
         print("**** prediction is loaded from {0} ****".format(csv_file))
@@ -90,6 +90,8 @@ def get_model_id(model):
 def get_cache_file(model_id, index, cache_dir='', suffix='csv'):
     # Identify index trick.
     # If sum of first 20 index, recognize as the same index.
+    if index is None:
+        raise IOError
     if len(index) < 20:
         sum_index = sum(index)
     else:

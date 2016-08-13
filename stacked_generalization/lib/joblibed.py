@@ -21,6 +21,8 @@ class BaseJoblibed(BaseEstimator):
         self.estimator.id = 'j' + prefix
         self.skip_refit = skip_refit
         self.cache_dir = cache_dir
+        if not os.path.isdir(self.cache_dir):
+            os.mkdir(self.cache_dir)
 
     def fit(self, xs_train, y_train, index=None):
         dump_file = ""
@@ -87,6 +89,12 @@ class JoblibedClassifier(BaseJoblibed, ClassifierMixin):
         """
         proba = self.predict_proba(X, index)
         return np.argmax(proba, axis=1)
+
+    def score(self, X, y, index=None, sample_weight=None):
+        from sklearn.metrics import accuracy_score
+        return accuracy_score(y,
+                              self.predict(X, index),
+                              sample_weight=sample_weight)
 
 
 class JoblibedRegressor(BaseJoblibed, RegressorMixin):
