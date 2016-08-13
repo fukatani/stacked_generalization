@@ -21,7 +21,7 @@ class BaseJoblibed(BaseEstimator):
         self.estimator.id = 'j' + prefix
         self.skip_refit = skip_refit
         self.cache_dir = cache_dir
-        if not os.path.isdir(self.cache_dir):
+        if self.cache_dir and not os.path.isdir(self.cache_dir):
             os.mkdir(self.cache_dir)
 
     def fit(self, xs_train, y_train, index=None):
