@@ -10,8 +10,8 @@ before_install:
   - sudo ln -s /run/shm /dev/shm
 # Install packages
 install:
-#  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy scikit-learn pandas
-  - conda install --yes atlas numpy scipy scikit-learn pandas
+#  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy nose scikit-learn pandas
+  - conda install --yes atlas numpy scipy nose scikit-learn pandas
 script:
   - cd stacked_generalization/lib/test
   - python test.py
