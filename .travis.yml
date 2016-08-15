@@ -1,14 +1,16 @@
-language: python
-allow_failures:
-  - python: "3.4_with_system_site_packages"
-python:
-  - "2.7_with_system_site_packages"
-# don't work
-#  - "3.4_with_system_site_packages"
+# Setup anaconda
 before_install:
-  - sudo apt-get install -qq python-numpy python-scipy
-  - pip install sklearn
-  - pip install pandas
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+  # The next couple lines fix a crash with multiprocessing on Travis and are not specific to using Miniconda
+  - sudo rm -rf /dev/shm
+  - sudo ln -s /run/shm /dev/shm
+# Install packages
+install:
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION atlas numpy scipy sklearn pandas
 script:
   - cd stacked_generalization/lib/test
   - python test.py
