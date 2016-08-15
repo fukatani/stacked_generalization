@@ -100,7 +100,7 @@ See also https://github.com/fukatani/stacked_generalization/blob/master/stacked_
 
 ## Software Requirement
 
-* Python (2.7 or later)
+* Python (2.7 or 3.4)
 * scikit-learn
 
 ## Installation
