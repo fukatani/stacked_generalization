@@ -17,7 +17,7 @@ except ImportError:
 
 setup(name='stacked_generalization',
       version=version,
-      description='Machine Learning Stacking Uti',
+      description='Machine Learning Stacking Util',
       keywords = 'Stacking, Machine Learning',
       author='Ryosuke Fukatani',
       author_email='nannyakannya@gmail.com',

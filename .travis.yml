@@ -15,3 +15,5 @@ script:
   - cd ../../example
   - python cross_validation_for_iris.py
   - python simple_regression.py
+  - python joblibed_classification.py
+  - python fwls_regression.py
