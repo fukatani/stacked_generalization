@@ -8,7 +8,12 @@ Including simple model cache system Joblibed claasifier and Joblibed Regressor.
 
 ## Feature
 
-#####1) Any scikit-learn model is availavle for Stage 0 and Stage 1 model. And stacked model itself has the same interface as scikit-learn library.
+#####1) Any scikit-learn model is availavle for Stage 0 and Stage 1 model.
+
+#####And stacked model itself has the same interface as scikit-learn library.
+
+You can replace model such as *RandomForestClassifier* to *stacked model* easily in your scripts.
+And multi stage stacking is also easy.
 
 ex.
 ```python
@@ -38,11 +43,9 @@ https://github.com/fukatani/stacked_generalization/blob/master/stacked_generaliz
 
 https://github.com/fukatani/stacked_generalization/blob/master/stacked_generalization/example/simple_regression.py
 
-Stacked learning model itself is used as sk-learn model, so you can replace model such as *RandomForestClassifier* to *stacked model* easily in your scripts.
-
 #####2) Evaluation model by out-of-bugs score.
 Stacking technic itself uses CV to stage0. So if you use CV for entire stacked model, ***each stage 0 model are fitted n_folds squared times.***
-Sometimes its computational cost can be significent,therefore we implemented CV only for stage1[2].
+Sometimes its computational cost can be significent, therefore we implemented CV only for stage1[2].
 
 For example, when we get 3 blends (stage0 prediction), 2 blends are used for stage 1 fitting. The remaining one blend is used for model test. Repitation this cycle for all 3 blends, and averaging scores, we can get oob (out-of-bugs) score ***with only n_fold times stage0 fitting.***
 
@@ -53,8 +56,10 @@ sl.fit(iris.target, iris.data)
 print("Accuracy: %f" % sl.oob_score_)
 
 ```
-
 #####3) Caching stage1 blend_data and trained model. (optional)
+
+If cache is exists, recalculation for stage 0 will be skipped.
+This function is useful for stage 1 tuning.
 ```python
 sl = StackedClassifier(bclf, clfs, save_stage0=True, save_dir='stack_temp')
 ```
