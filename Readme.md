@@ -2,7 +2,7 @@
 
 # stacked_generalization
 Implemented machine learning ***stacking technic[1]*** as handy library in Python.
-Feature weighted linear stacking is also available. (See https://github.com/fukatani/stacked_generalization/tree/master/stacked_generalization/example.)
+Feature weighted linear stacking is also available. (See https://github.com/fukatani/stacked_generalization/tree/master/stacked_generalization/example)
 
 Including simple model cache system Joblibed claasifier and Joblibed Regressor.
 
@@ -34,7 +34,7 @@ clfs = [RandomForestClassifier(n_estimators=40, criterion = 'gini', random_state
 # same interface as scikit-learn
 sl = StackedClassifier(bclf, clfs)
 sl.fit(iris.target, iris.data)
-score = metrics.accuracy_score(iris.target, classifier.predict(iris.data))
+score = metrics.accuracy_score(iris.target, sl.predict(iris.data))
 print("Accuracy: %f" % score)
 ```
 
