@@ -91,7 +91,7 @@ class TestStackedClassfier(unittest.TestCase):
         sl.score(self.iris.data, self.iris.target)
         self.assertGreater(score, 0.8, "Failed with score = {0}".format(score))
 
-        self.assertTrue(os.path.isfile('ExtraTreesClassifier_r0_3__m5_0p0__m4_2__m1_auto__m0_N__m3_1__m2_N__n0_30__b0_0__c1_gini__c0_N_190.csv'))
+        self.assertTrue(os.path.isfile('ExtraTreesClassifier_r0_3__m5_2__m4_1__m6_0p0__m1_auto__m0_N__m3_1e-07__m2_N__n0_30__b0_0__c1_gini__c0_N_190.csv'))
         for csv_file in glob.glob("*.csv"):
             os.remove(csv_file)
         for csv_file in glob.glob("*.pkl"):
@@ -138,8 +138,7 @@ class TestStackedClassfier(unittest.TestCase):
         model.fit(self.iris.data, self.iris.target)
         indexes = np.fromfunction(lambda x: x, (self.iris.data.shape[0], ), dtype=np.int32)
         saving_predict_proba(model, self.iris.data, indexes)
-        os.remove('RandomForestClassifier_r0_N__m5_0p0__m4_2__m1_auto__m0_N__m3_1__m2_N__n0_10__b0_1__c1_gini__c0_N_190.csv')
-
+        os.remove('RandomForestClassifier_r0_N__m5_2__m4_1__m6_0p0__m1_auto__m0_N__m3_1e-07__m2_N__n0_10__b0_1__c1_gini__c0_N_190.csv')
     def test_fwls_classfier(self):
         feature_func = lambda x: np.ones(x.shape)
         bclf = LogisticRegression(random_state=1)
