@@ -1,7 +1,7 @@
 ﻿import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, clone, RegressorMixin
 from sklearn.externals import joblib
-import util
+import stacked_generalization.lib.util as util
 import os
 
 
