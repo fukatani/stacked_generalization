@@ -106,7 +106,9 @@ See also https://github.com/fukatani/stacked_generalization/blob/master/stacked_
 ## Software Requirement
 
 * Python (2.7 or 3.4)
+* numpy
 * scikit-learn
+* pandas
 
 ## Installation
 
