@@ -8,7 +8,7 @@ from sklearn.metrics import mean_squared_error
 from collections import OrderedDict
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.externals import joblib
-import util
+from stacked_generalization.lib import util
 import os
 
 
