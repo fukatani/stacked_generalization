@@ -52,7 +52,7 @@ For example, when we get 3 blends (stage0 prediction), 2 blends are used for sta
 ex.
 ```python
 sl = StackedClassifier(bclf, clfs, oob_score_flag=True)
-sl.fit(iris.target, iris.data)
+sl.fit(iris.data, iris.target)
 print("Accuracy: %f" % sl.oob_score_)
 
 ```
