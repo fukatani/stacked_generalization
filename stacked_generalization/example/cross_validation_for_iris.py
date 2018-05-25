@@ -1,13 +1,9 @@
-import os
-import sys
-
 from sklearn import datasets
 from sklearn.utils.validation import check_random_state
 from stacked_generalization.lib.stacking import StackedClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.ensemble import AdaBoostClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.linear_model import Ridge
