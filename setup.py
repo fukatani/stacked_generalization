@@ -1,28 +1,19 @@
+import io
+import os
 from setuptools import setup, find_packages
 
-import re
-import os
+version = '0.0.6'
 
-
-version = '0.0.5'
 install_requires = [
     'numpy',
     'scikit-learn',
     'pandas',
 ]
 
+CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 def read(filename):
-    return open(os.path.join(os.path.dirname(__file__), filename)).read()
-
-
-try:
-    import pypandoc
-    read_md = lambda f: pypandoc.convert(f, 'rst')
-except ImportError:
-    print("warning: pypandoc module not found, could not convert Markdown to RST")
-    read_md = lambda f: open(f, 'r').read()
-
+    return io.open(os.path.join(CURRENT_DIR, filename), encoding='utf-8').read()
 
 setup(name='stacked_generalization',
       version=version,
@@ -33,8 +24,8 @@ setup(name='stacked_generalization',
       url='https://github.com/fukatani/stacked_generalization',
       license="Apache License 2.0",
       packages=find_packages(),
-      package_data={ 'stacked_generalization' : ['testcode/*'], },
-      long_description=read_md('Readme.md'),
+      package_data={ 'stacked_generalization' : ['Readme.md'], },
+      long_description='Readme.rst',
       install_requires=install_requires,
 )
 
