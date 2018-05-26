@@ -137,7 +137,7 @@ class TestStackedClassfier(unittest.TestCase):
         indexes = np.fromfunction(lambda x: x, (self.iris.data.shape[0], ), dtype=np.int32)
         saving_predict_proba(model, self.iris.data, indexes)
         any_file_removed = False
-        for filename in os.listdir():
+        for filename in os.listdir('.'):
             if filename.startswith('RandomForestClassifier'):
                 os.remove(filename)
                 any_file_removed = True
