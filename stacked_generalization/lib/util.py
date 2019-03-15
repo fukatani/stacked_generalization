@@ -1,4 +1,4 @@
-from sklearn.cross_validation import StratifiedKFold
+from sklearn. import StratifiedKFold
 import numpy as np
 from sklearn.externals import joblib
 import pandas as pd
