@@ -1,5 +1,5 @@
 ﻿import numpy as np
-from sklearn.cross_validation import StratifiedKFold, KFold
+from sklearn.model_selection import StratifiedKFold, KFold
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, clone
 from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import multiple_feature_weight
@@ -95,7 +95,7 @@ class BaseStacked(BaseEstimator):
         self.n_classes_ = np.unique(y_train).shape[0]
 
         # Ready for cross validation
-        skf = self._make_kfold(y_train)
+        skf = self._make_kfold(xs_train, y_train)
         self._out_to_console('xs_train.shape = {0}'.format(xs_train.shape), 1)
 
         #fit stage0 models.
@@ -195,7 +195,7 @@ class BaseStacked(BaseEstimator):
             np.savetxt(file_name, data, delimiter=",")
 
     def _pre_propcess(self, blend, X):
-        return blend
+        return numpy_c_concatenate(blend, X)
 
     def get_stage0_id(self, model):
         return self.save_dir + util.get_model_id(model)
@@ -292,11 +292,11 @@ class StackedClassifier(BaseStacked, ClassifierMixin):
         blend_test = self._pre_propcess(blend_test, xs_test)
         return self.bclf.predict_proba(blend_test)
 
-    def _make_kfold(self, Y):
+    def _make_kfold(self, X, Y):
         if self.MyKfold is not None:
             return self.MyKfold
         else:
-            return StratifiedKFold(Y, self.n_folds)
+            return StratifiedKFold(self.n_folds).split(X, Y)
 
     def predict(self, X, index=None):
         """Predict class for X.
@@ -362,11 +362,11 @@ class StackedRegressor(BaseStacked, RegressorMixin):
         blend_test = self._pre_propcess(blend_test, X)
         return self.bclf.predict(blend_test)
 
-    def _make_kfold(self, Y):
+    def _make_kfold(self, X, Y):
         if self.MyKfold is not None:
             return self.MyKfold
         else:
-            return KFold(Y.size, self.n_folds)
+            return KFold(self.n_folds).split(X, Y)
 
     def _get_blend_init(self, y_train, clf):
         if hasattr(clf, 'predict'):
