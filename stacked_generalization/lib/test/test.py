@@ -43,7 +43,7 @@ class TestStackedClassfier(unittest.TestCase):
                                clfs,
                                n_folds=3,
                                verbose=0,
-                               Kfold=StratifiedKFold(self.iris.target, 3),
+                               Kfold=list(StratifiedKFold(self.n_folds).split(self.iris.data, self.iris.target)),
                                stack_by_proba=False,
                                oob_score_flag=True,
                                oob_metrics=log_loss)
@@ -155,7 +155,7 @@ class TestStackedClassfier(unittest.TestCase):
                             feature_func=feature_func,
                             n_folds=3,
                             verbose=0,
-                            Kfold=StratifiedKFold(self.iris.target, 3),
+                            Kfold=list(StratifiedKFold(self.n_folds).split(self.iris.data, self.iris.target)),
                             stack_by_proba=False)
         sl.fit(self.iris.data, self.iris.target)
         score = sl.score(self.iris.data, self.iris.target)
