@@ -296,7 +296,7 @@ class StackedClassifier(BaseStacked, ClassifierMixin):
         if self.MyKfold is not None:
             return self.MyKfold
         else:
-            return StratifiedKFold(self.n_folds).split(X, Y)
+            return list(StratifiedKFold(self.n_folds).split(X, Y))
 
     def predict(self, X, index=None):
         """Predict class for X.

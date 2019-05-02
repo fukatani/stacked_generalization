@@ -20,7 +20,7 @@ from stacked_generalization.lib.util import numpy_c_concatenate
 from stacked_generalization.lib.util import saving_predict_proba
 from stacked_generalization.lib.util import get_model_id
 from stacked_generalization.lib.util import multiple_feature_weight
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from numpy.testing import assert_allclose
 import glob
 
