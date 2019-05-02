@@ -366,7 +366,7 @@ class StackedRegressor(BaseStacked, RegressorMixin):
         if self.MyKfold is not None:
             return self.MyKfold
         else:
-            return KFold(self.n_folds).split(X, Y)
+            return list(KFold(self.n_folds).split(X, Y))
 
     def _get_blend_init(self, y_train, clf):
         if hasattr(clf, 'predict'):
