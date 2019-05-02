@@ -1,8 +1,5 @@
-import os
-import sys
-
 from sklearn import datasets
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.utils.validation import check_random_state
 from stacked_generalization.lib.joblibed import JoblibedClassifier
@@ -21,7 +18,7 @@ rf = RandomForestClassifier(n_estimators=40,
 clf = JoblibedClassifier(rf, "rf")
 
 
-train_idx, test_idx = list(StratifiedKFold(iris.target, 3))[0]
+train_idx, test_idx = list(StratifiedKFold(3).split(iris.data, iris.target))[0]
 
 xs_train = iris.data[train_idx]
 y_train = iris.target[train_idx]

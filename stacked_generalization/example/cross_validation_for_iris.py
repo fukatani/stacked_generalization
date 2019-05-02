@@ -7,7 +7,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.linear_model import Ridge
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.manifold import TSNE
 
 iris = datasets.load_iris()
@@ -45,7 +45,7 @@ gb = GradientBoostingClassifier(n_estimators=25, random_state=1)
 sc_score = 0
 gb_score = 0
 n_folds = 3
-for train_idx, test_idx in StratifiedKFold(iris.target, n_folds):
+for train_idx, test_idx in StratifiedKFold(n_folds).split(iris.data, iris.target):
     xs_train = iris.data[train_idx]
     y_train = iris.target[train_idx]
     xs_test = iris.data[test_idx]

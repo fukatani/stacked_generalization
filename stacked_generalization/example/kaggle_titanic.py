@@ -1,8 +1,8 @@
-from sklearn.cross_validation import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn import preprocessing
-from sklearn.linear_model import LogisticRegression, RidgeClassifier, Ridge
-from sklearn.preprocessing import OneHotEncoder, LabelBinarizer
-from stacked_generalization.lib.stacking import StackedClassifier, FWLSClassifier
+from sklearn.linear_model import LogisticRegression, Ridge
+from sklearn.preprocessing import LabelBinarizer
+from stacked_generalization.lib.stacking import StackedClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.ensemble import GradientBoostingClassifier
@@ -167,7 +167,7 @@ if __name__ == '__main__':
         sl = StackedClassifier(bclf, clfs, oob_score_flag=False,verbose=2)
         xs_train, y_train = train_dr.get_sample(-1)
         score = []
-        for train_index, test_index in StratifiedKFold(y_train, 3):
+        for train_index, test_index in StratifiedKFold(3).split(xs_train, y_train):
             sl.fit(xs_train[train_index], y_train[train_index])
             score.append(sl.score(xs_train[test_index], y_train[test_index]))
         print('full-cv score: {0}'.format(score))

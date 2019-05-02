@@ -1,11 +1,7 @@
-import os
-import sys
-
 from sklearn import datasets, metrics, preprocessing
 from stacked_generalization.lib.stacking import StackedRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.manifold import TSNE
